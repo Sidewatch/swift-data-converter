@@ -41,8 +41,8 @@ public enum DataConverter {
             return d.keys.sorted().map { k in
                 let val = d[k] ?? NSNull()
                 return isContainer(val) && !isEmptyContainer(val)
-                    ? "\(pad)\(k):\n\(yaml(val, indent + 1))"
-                    : "\(pad)\(k): \(scalar(val))"
+                    ? "\(pad)\(scalar(k)):\n\(yaml(val, indent + 1))"
+                    : "\(pad)\(scalar(k)): \(scalar(val))"
             }.joined(separator: "\n")
         }
         if let a = v as? [Any] {
@@ -65,11 +65,20 @@ public enum DataConverter {
             return "\(n)"
         }
         if let s = v as? String {
-            let needsQuote = s.isEmpty || s.contains(where: { ":#{}[],&*\n\t\\\"".contains($0) }) || s.first == " " || s.last == " "
-            return needsQuote ? "\"\(escapeDQ(s))\"" : s
+            return yamlNeedsQuote(s) ? "\"\(escapeDQ(s))\"" : s
         }
         if isContainer(v) { return v is [Any] ? "[]" : "{}" }
         return "\(v)"
+    }
+    /// True when a bare YAML scalar would be misparsed: structural/escape characters,
+    /// leading/trailing space, a leading indicator, a type lexeme (true/null/yes/…), or a number.
+    private static func yamlNeedsQuote(_ s: String) -> Bool {
+        if s.isEmpty || s.first == " " || s.last == " " { return true }
+        if s.contains(where: { ":#{}[],&*\n\t\r\\\"".contains($0) }) { return true }
+        if let f = s.first, "-?!|>'%@`".contains(f) { return true }
+        if ["true", "false", "null", "~", "yes", "no", "on", "off"].contains(s.lowercased()) { return true }
+        if Double(s) != nil { return true }
+        return false
     }
 
     // MARK: - TOML (emit)
@@ -80,12 +89,12 @@ public enum DataConverter {
             let val = dict[k] ?? NSNull()
             if let d = val as? [String: Any] {
                 let p = path + [k]
-                subs += "\n[\(p.joined(separator: "."))]\n" + toml(d, path: p)
+                subs += "\n[\(p.map(tomlKey).joined(separator: "."))]\n" + toml(d, path: p)
             } else if let a = val as? [Any], !a.isEmpty, a.allSatisfy({ $0 is [String: Any] }) {
                 let p = path + [k]
-                for item in a { if let d = item as? [String: Any] { subs += "\n[[\(p.joined(separator: "."))]]\n" + toml(d, path: p) } }
+                for item in a { if let d = item as? [String: Any] { subs += "\n[[\(p.map(tomlKey).joined(separator: "."))]]\n" + toml(d, path: p) } }
             } else {
-                scalars += "\(k) = \(tomlValue(val))\n"
+                scalars += "\(tomlKey(k)) = \(tomlValue(val))\n"
             }
         }
         return scalars + subs
@@ -98,15 +107,35 @@ public enum DataConverter {
         }
         if let s = v as? String { return "\"\(escapeDQ(s))\"" }
         if let a = v as? [Any] { return "[" + a.map(tomlValue).joined(separator: ", ") + "]" }
-        return "\"\(v)\""
+        if let d = v as? [String: Any] {
+            if d.isEmpty { return "{}" }
+            return "{ " + d.keys.sorted().map { "\(tomlKey($0)) = \(tomlValue(d[$0] ?? NSNull()))" }.joined(separator: ", ") + " }"
+        }
+        return "\"\(escapeDQ("\(v)"))\""
+    }
+    /// Quote a TOML key unless it's a valid bare key ([A-Za-z0-9_-]+).
+    private static func tomlKey(_ k: String) -> String {
+        let bare = !k.isEmpty && k.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_" || $0 == "-") }
+        return bare ? k : "\"\(escapeDQ(k))\""
     }
 
-    /// Escape a string for a YAML/TOML double-quoted scalar (backslash first).
+    /// Escape a string for a YAML/TOML double-quoted scalar (backslash first);
+    /// C0 control characters that lack a short escape become \uXXXX.
     private static func escapeDQ(_ s: String) -> String {
-        s.replacingOccurrences(of: "\\", with: "\\\\")
-         .replacingOccurrences(of: "\"", with: "\\\"")
-         .replacingOccurrences(of: "\n", with: "\\n")
-         .replacingOccurrences(of: "\t", with: "\\t")
+        var out = ""
+        for u in s.unicodeScalars {
+            switch u {
+            case "\\": out += "\\\\"
+            case "\"": out += "\\\""
+            case "\n": out += "\\n"
+            case "\t": out += "\\t"
+            case "\r": out += "\\r"
+            default:
+                if u.value < 0x20 { out += String(format: "\\u%04X", u.value) }
+                else { out.unicodeScalars.append(u) }
+            }
+        }
+        return out
     }
 
     // MARK: - CSV
@@ -114,7 +143,7 @@ public enum DataConverter {
     private static func csv(_ v: Any) -> String {
         guard let arr = v as? [Any] else { return "⚠︎ CSV output needs a JSON array of objects." }
         let objs = arr.compactMap { $0 as? [String: Any] }
-        guard !objs.isEmpty else { return "⚠︎ CSV output needs an array of objects." }
+        guard !objs.isEmpty, objs.count == arr.count else { return "⚠︎ CSV output needs an array of objects." }
         var keys: [String] = []
         for o in objs { for k in o.keys.sorted() where !keys.contains(k) { keys.append(k) } }
         var rows = [keys.map(esc).joined(separator: ",")]
@@ -129,16 +158,26 @@ public enum DataConverter {
             if CFGetTypeID(n) == CFBooleanGetTypeID() { return n.boolValue ? "true" : "false" }
             return "\(n)"
         }
+        if isContainer(v) {
+            guard let d = try? JSONSerialization.data(withJSONObject: v, options: [.sortedKeys]),
+                  let s = String(data: d, encoding: .utf8) else { return "" }
+            return s
+        }
         return "\(v)"
     }
     private static func esc(_ s: String) -> String {
-        (s.contains(",") || s.contains("\"") || s.contains("\n")) ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s
+        (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r")) ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s
     }
 
     public static func parseCSV(_ text: String) -> [[String: Any]] {
         let records = csvRecords(text)
         guard records.count > 1 else { return [] }
-        let headers = records[0]
+        var headers: [String] = [], seen: [String: Int] = [:]
+        for h in records[0] {                     // de-dupe repeated headers: name, name_2, …
+            let n = (seen[h] ?? 0) + 1
+            seen[h] = n
+            headers.append(n == 1 ? h : "\(h)_\(n)")
+        }
         return records.dropFirst().map { cells in
             var d: [String: Any] = [:]
             for (i, h) in headers.enumerated() { d[h] = i < cells.count ? cells[i] : "" }
@@ -165,8 +204,7 @@ public enum DataConverter {
                 switch c {
                 case "\"": inQuotes = true
                 case ",": endField()
-                case "\r": break          // swallow CR; the paired LF (or EOF) ends the row
-                case "\n": endRow()
+                case "\r\n", "\r", "\n": endRow()   // CRLF is a single grapheme Character; bare CR also ends a row
                 default: field.append(c)
                 }
             }
