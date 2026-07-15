@@ -13,6 +13,17 @@ import Foundation
 /// output pretty JSON / YAML / TOML / CSV. (YAML/TOML are emit-only — parsing them
 /// back would need a real library.)
 public enum DataConverter {
+    /// Convert `input` from one text format to another, routing through a JSON value hub.
+    ///
+    /// - Parameters:
+    ///   - input: The source text.
+    ///   - from: The input format — `"CSV"` uses the CSV parser; anything else is parsed as JSON.
+    ///   - to: The output format — `"YAML"`, `"TOML"`, or `"CSV"`; anything else emits pretty-printed,
+    ///     key-sorted JSON.
+    /// - Returns: The converted text, or a human-readable `"⚠︎ …"` message when the input can't be
+    ///   parsed or the value's shape doesn't fit the target (e.g. TOML needs a top-level object).
+    /// - Note: Never throws — errors come back as `"⚠︎"`-prefixed strings, so callers showing the
+    ///   result verbatim (a converter UI) need no error path.
     public static func convert(_ input: String, from: String, to: String) -> String {
         let value: Any?
         switch from {
@@ -30,10 +41,12 @@ public enum DataConverter {
         }
     }
 
+    /// True when the value is a JSON container (object or array).
     private static func isContainer(_ v: Any) -> Bool { v is [String: Any] || v is [Any] }
 
     // MARK: - YAML (emit)
 
+    /// Emit a JSON value as block-style YAML, sorted keys, two-space indent per level.
     private static func yaml(_ v: Any, _ indent: Int = 0) -> String {
         let pad = String(repeating: "  ", count: indent)
         if let d = v as? [String: Any] {
@@ -55,9 +68,11 @@ public enum DataConverter {
         }
         return "\(pad)\(scalar(v))"
     }
+    /// True for an empty object or array — emitted inline as `{}` / `[]` instead of a nested block.
     private static func isEmptyContainer(_ v: Any) -> Bool {
         (v as? [String: Any])?.isEmpty == true || (v as? [Any])?.isEmpty == true
     }
+    /// Render one YAML scalar: bools/numbers/null as bare lexemes, strings quoted only when needed.
     private static func scalar(_ v: Any) -> String {
         if v is NSNull { return "null" }
         if let n = v as? NSNumber {
@@ -83,6 +98,8 @@ public enum DataConverter {
 
     // MARK: - TOML (emit)
 
+    /// Emit a dictionary as TOML: scalar keys first, then nested objects as `[a.b]` tables and
+    /// arrays-of-objects as `[[a.b]]` array-of-tables, recursing with the dotted key path.
     private static func toml(_ dict: [String: Any], path: [String]) -> String {
         var scalars = "", subs = ""
         for k in dict.keys.sorted() {
@@ -99,6 +116,8 @@ public enum DataConverter {
         }
         return scalars + subs
     }
+    /// Render one TOML value: quoted string, bool/number lexeme, inline array, or inline table.
+    /// TOML has no null, so `NSNull` degrades to an empty string.
     private static func tomlValue(_ v: Any) -> String {
         if v is NSNull { return "\"\"" }
         if let n = v as? NSNumber {
@@ -140,6 +159,8 @@ public enum DataConverter {
 
     // MARK: - CSV
 
+    /// Emit an array of objects as CSV: header = union of all keys (first-seen order, keys sorted
+    /// per object), one row per object, missing keys as empty cells.
     private static func csv(_ v: Any) -> String {
         guard let arr = v as? [Any] else { return "⚠︎ CSV output needs a JSON array of objects." }
         let objs = arr.compactMap { $0 as? [String: Any] }
@@ -152,6 +173,8 @@ public enum DataConverter {
         }
         return rows.joined(separator: "\n")
     }
+    /// Render one CSV cell value: null/missing → empty, bool/number lexemes, nested containers as
+    /// compact JSON.
     private static func cell(_ v: Any?) -> String {
         guard let v, !(v is NSNull) else { return "" }
         if let n = v as? NSNumber {
@@ -165,10 +188,18 @@ public enum DataConverter {
         }
         return "\(v)"
     }
+    /// RFC-4180 field quoting: wrap in quotes (doubling embedded quotes) only when the cell
+    /// contains a comma, quote, or line break.
     private static func esc(_ s: String) -> String {
         (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r")) ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s
     }
 
+    /// Parse CSV text into one dictionary per data row, keyed by the header row.
+    ///
+    /// Repeated header names are de-duplicated (`name`, `name_2`, …); rows shorter than the header
+    /// are padded with empty strings. All values are `String`s.
+    ///
+    /// - Returns: The row objects, or `[]` when there is no data row after the header.
     public static func parseCSV(_ text: String) -> [[String: Any]] {
         let records = csvRecords(text)
         guard records.count > 1 else { return [] }
@@ -185,8 +216,11 @@ public enum DataConverter {
         }
     }
 
-    /// Quote-aware tokenizer: a newline only ends a record when NOT inside quotes,
-    /// so multiline quoted fields survive. Normalizes CR/CRLF. Shared with the CSV preview table.
+    /// Tokenize CSV text into records of raw fields, header row included.
+    ///
+    /// Quote-aware: a newline only ends a record when NOT inside quotes, so multiline quoted
+    /// fields survive; doubled quotes (`""`) unescape to one quote. LF, CRLF, and bare CR all
+    /// end a record. Reusable on its own (e.g. to drive a table view without header mapping).
     public static func csvRecords(_ text: String) -> [[String]] {
         var records: [[String]] = [], row: [String] = [], field = "", inQuotes = false
         let chars = Array(text)
