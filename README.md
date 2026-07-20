@@ -23,7 +23,7 @@ A dependency-free data-format converter that routes everything through a JSON va
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/arraypress/swift-data-converter.git", from: "1.0.0")
+    .package(url: "https://github.com/Sidewatch/swift-data-converter.git", from: "1.0.0")
 ]
 ```
 
