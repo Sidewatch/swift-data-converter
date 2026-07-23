@@ -146,4 +146,39 @@ final class DataConverterTests: XCTestCase {
         XCTAssertEqual(rows[0]["name"] as? String, "A")
         XCTAssertEqual(rows[0]["name_2"] as? String, "B")
     }
+
+    // Regression: cells beyond the header row were silently dropped.
+    func testParseCSVKeepsExtraCellsUnderSynthesizedColumns() {
+        let rows = DataConverter.parseCSV("a,b\n1,2,3\n4,5")
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(rows[0]["a"] as? String, "1")
+        XCTAssertEqual(rows[0]["b"] as? String, "2")
+        XCTAssertEqual(rows[0]["column_3"] as? String, "3")   // extra cell survives
+        XCTAssertEqual(rows[1]["column_3"] as? String, "")    // short rows pad the synthesized column too
+        let out = DataConverter.convert("a,b\n1,2,3", from: "CSV", to: "JSON")
+        XCTAssertTrue(out.contains(#""3""#), out)
+    }
+
+    // Regression: integral floats lost their float type (1.0 → 1) in YAML/TOML output.
+    func testIntegralFloatsKeepFloatTypeInYAMLAndTOML() {
+        let toml = DataConverter.convert(#"{"a":1.0,"b":2.5,"c":3}"#, from: "JSON", to: "TOML")
+        XCTAssertTrue(toml.contains("a = 1.0"), toml)   // stays a TOML float
+        XCTAssertTrue(toml.contains("b = 2.5"), toml)
+        XCTAssertTrue(toml.contains("c = 3"), toml)     // genuine ints stay ints
+        let yaml = DataConverter.convert(#"{"a":1.0,"c":3}"#, from: "JSON", to: "YAML")
+        XCTAssertTrue(yaml.contains("a: 1.0"), yaml)
+        XCTAssertTrue(yaml.contains("c: 3"), yaml)
+    }
+
+    // The byte-level tokenizer must pass multi-byte glyphs through untouched.
+    func testCSVRecordsPreservesMultiByteCharacters() {
+        let records = DataConverter.csvRecords("naïve,☕️\n\"héllo, wörld\",日本語")
+        XCTAssertEqual(records[0], ["naïve", "☕️"])
+        XCTAssertEqual(records[1], ["héllo, wörld", "日本語"])
+    }
+
+    func testCSVRecordsFlushesTrailingEmptyField() {
+        XCTAssertEqual(DataConverter.csvRecords("a,b\n1,"), [["a", "b"], ["1", ""]])
+        XCTAssertEqual(DataConverter.csvRecords("a,b\n1,2\n"), [["a", "b"], ["1", "2"]])   // trailing newline adds no row
+    }
 }

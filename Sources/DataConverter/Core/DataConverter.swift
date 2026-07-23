@@ -77,13 +77,24 @@ public enum DataConverter {
         if v is NSNull { return "null" }
         if let n = v as? NSNumber {
             if CFGetTypeID(n) == CFBooleanGetTypeID() { return n.boolValue ? "true" : "false" }
-            return "\(n)"
+            return numberLexeme(n)
         }
         if let s = v as? String {
             return yamlNeedsQuote(s) ? "\"\(escapeDQ(s))\"" : s
         }
         if isContainer(v) { return v is [Any] ? "[]" : "{}" }
         return "\(v)"
+    }
+    /// Render a non-boolean number, keeping the float-ness JSON gave it: an integral
+    /// double (`1.0`) describes as `1`, which would change the value's type in TOML
+    /// (typed) and re-parse as an int in YAML — so it gets its `.0` back.
+    private static func numberLexeme(_ n: NSNumber) -> String {
+        let s = "\(n)"
+        if CFNumberIsFloatType(n), n.doubleValue.isFinite,
+           !s.contains("."), !s.contains("e"), !s.contains("E") {
+            return s + ".0"
+        }
+        return s
     }
     /// True when a bare YAML scalar would be misparsed: structural/escape characters,
     /// leading/trailing space, a leading indicator, a type lexeme (true/null/yes/…), or a number.
@@ -122,7 +133,7 @@ public enum DataConverter {
         if v is NSNull { return "\"\"" }
         if let n = v as? NSNumber {
             if CFGetTypeID(n) == CFBooleanGetTypeID() { return n.boolValue ? "true" : "false" }
-            return "\(n)"
+            return numberLexeme(n)
         }
         if let s = v as? String { return "\"\(escapeDQ(s))\"" }
         if let a = v as? [Any] { return "[" + a.map(tomlValue).joined(separator: ", ") + "]" }
@@ -197,18 +208,23 @@ public enum DataConverter {
     /// Parse CSV text into one dictionary per data row, keyed by the header row.
     ///
     /// Repeated header names are de-duplicated (`name`, `name_2`, …); rows shorter than the header
-    /// are padded with empty strings. All values are `String`s.
+    /// are padded with empty strings, and rows *longer* than the header keep their extra cells
+    /// under synthesized `column_N` keys (N is the 1-based column position). All values are
+    /// `String`s.
     ///
     /// - Returns: The row objects, or `[]` when there is no data row after the header.
     public static func parseCSV(_ text: String) -> [[String: Any]] {
         let records = csvRecords(text)
         guard records.count > 1 else { return [] }
         var headers: [String] = [], seen: [String: Int] = [:]
-        for h in records[0] {                     // de-dupe repeated headers: name, name_2, …
+        func addHeader(_ h: String) {             // de-dupe repeated headers: name, name_2, …
             let n = (seen[h] ?? 0) + 1
             seen[h] = n
             headers.append(n == 1 ? h : "\(h)_\(n)")
         }
+        for h in records[0] { addHeader(h) }
+        let width = records.dropFirst().reduce(headers.count) { max($0, $1.count) }
+        for i in headers.count..<width { addHeader("column_\(i + 1)") }
         return records.dropFirst().map { cells in
             var d: [String: Any] = [:]
             for (i, h) in headers.enumerated() { d[h] = i < cells.count ? cells[i] : "" }
@@ -222,29 +238,47 @@ public enum DataConverter {
     /// fields survive; doubled quotes (`""`) unescape to one quote. LF, CRLF, and bare CR all
     /// end a record. Reusable on its own (e.g. to drive a table view without header mapping).
     public static func csvRecords(_ text: String) -> [[String]] {
+        // Scans UTF-8 bytes, not Characters: every delimiter (quote, comma, CR, LF) is a
+        // single ASCII byte and continuation bytes are all ≥ 0x80, so multi-byte glyphs
+        // flow through untouched — and a multi-MB file avoids grapheme segmentation and
+        // a ~16-bytes-per-Character transient array.
         var records: [[String]] = [], row: [String] = [], field = "", inQuotes = false
-        let chars = Array(text)
-        var i = 0
-        func endField() { row.append(field); field = "" }
-        func endRow() { endField(); records.append(row); row = [] }
-        while i < chars.count {
-            let c = chars[i]
+        let bytes = Array(text.utf8)
+        let n = bytes.count
+        let quote: UInt8 = 0x22, comma: UInt8 = 0x2C, cr: UInt8 = 0x0D, lf: UInt8 = 0x0A
+        var i = 0, run = 0   // run = start of the pending byte run belonging to `field`
+        func flush(upTo end: Int) {
+            if end > run { field += String(decoding: bytes[run..<end], as: UTF8.self) }
+        }
+        func endField(at index: Int) { flush(upTo: index); row.append(field); field = "" }
+        func endRow(at index: Int) { endField(at: index); records.append(row); row = [] }
+        while i < n {
+            let b = bytes[i]
             if inQuotes {
-                if c == "\"" {
-                    if i + 1 < chars.count, chars[i + 1] == "\"" { field.append("\""); i += 1 }
-                    else { inQuotes = false }
-                } else { field.append(c) }
+                if b == quote {
+                    flush(upTo: i)
+                    if i + 1 < n, bytes[i + 1] == quote { field.append("\""); i += 2 }   // "" → one quote
+                    else { inQuotes = false; i += 1 }
+                    run = i
+                } else { i += 1 }
             } else {
-                switch c {
-                case "\"": inQuotes = true
-                case ",": endField()
-                case "\r\n", "\r", "\n": endRow()   // CRLF is a single grapheme Character; bare CR also ends a row
-                default: field.append(c)
+                switch b {
+                case quote:
+                    flush(upTo: i); inQuotes = true; i += 1; run = i
+                case comma:
+                    endField(at: i); i += 1; run = i
+                case cr:
+                    endRow(at: i)
+                    i += (i + 1 < n && bytes[i + 1] == lf) ? 2 : 1   // CRLF is one terminator; bare CR also ends a row
+                    run = i
+                case lf:
+                    endRow(at: i); i += 1; run = i
+                default:
+                    i += 1
                 }
             }
-            i += 1
         }
-        if !field.isEmpty || !row.isEmpty { endRow() }   // flush a final row with no trailing newline
+        if run < n || !field.isEmpty || !row.isEmpty { endRow(at: n) }   // flush a final row with no trailing newline
         return records
     }
 }
