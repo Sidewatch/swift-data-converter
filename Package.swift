@@ -14,7 +14,8 @@ let package = Package(
         .library(name: "DataConverter", targets: ["DataConverter"]),
     ],
     targets: [
-        .target(name: "DataConverter", path: "Sources"),
+        .target(name: "DataConverter", path: "Sources",
+                swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
         .testTarget(name: "DataConverterTests", dependencies: ["DataConverter"], path: "Tests"),
     ]
 )
