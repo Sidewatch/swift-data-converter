@@ -237,48 +237,5 @@ public enum DataConverter {
     /// Quote-aware: a newline only ends a record when NOT inside quotes, so multiline quoted
     /// fields survive; doubled quotes (`""`) unescape to one quote. LF, CRLF, and bare CR all
     /// end a record. Reusable on its own (e.g. to drive a table view without header mapping).
-    public static func csvRecords(_ text: String) -> [[String]] {
-        // Scans UTF-8 bytes, not Characters: every delimiter (quote, comma, CR, LF) is a
-        // single ASCII byte and continuation bytes are all ≥ 0x80, so multi-byte glyphs
-        // flow through untouched — and a multi-MB file avoids grapheme segmentation and
-        // a ~16-bytes-per-Character transient array.
-        var records: [[String]] = [], row: [String] = [], field = "", inQuotes = false
-        let bytes = Array(text.utf8)
-        let n = bytes.count
-        let quote: UInt8 = 0x22, comma: UInt8 = 0x2C, cr: UInt8 = 0x0D, lf: UInt8 = 0x0A
-        var i = 0, run = 0   // run = start of the pending byte run belonging to `field`
-        func flush(upTo end: Int) {
-            if end > run { field += String(decoding: bytes[run..<end], as: UTF8.self) }
-        }
-        func endField(at index: Int) { flush(upTo: index); row.append(field); field = "" }
-        func endRow(at index: Int) { endField(at: index); records.append(row); row = [] }
-        while i < n {
-            let b = bytes[i]
-            if inQuotes {
-                if b == quote {
-                    flush(upTo: i)
-                    if i + 1 < n, bytes[i + 1] == quote { field.append("\""); i += 2 }   // "" → one quote
-                    else { inQuotes = false; i += 1 }
-                    run = i
-                } else { i += 1 }
-            } else {
-                switch b {
-                case quote:
-                    flush(upTo: i); inQuotes = true; i += 1; run = i
-                case comma:
-                    endField(at: i); i += 1; run = i
-                case cr:
-                    endRow(at: i)
-                    i += (i + 1 < n && bytes[i + 1] == lf) ? 2 : 1   // CRLF is one terminator; bare CR also ends a row
-                    run = i
-                case lf:
-                    endRow(at: i); i += 1; run = i
-                default:
-                    i += 1
-                }
-            }
-        }
-        if run < n || !field.isEmpty || !row.isEmpty { endRow(at: n) }   // flush a final row with no trailing newline
-        return records
-    }
+    public static func csvRecords(_ text: String) -> [[String]] { CSVTokenizer.records(in: text) }
 }
