@@ -37,7 +37,7 @@ public enum DataConverter {
         case "CSV":  return csv(value)
         default:
             guard let d = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed]) else { return "⚠︎ Not serializable." }
-            return String(data: d, encoding: .utf8) ?? ""
+            return d.utf8String ?? ""
         }
     }
 
@@ -194,7 +194,7 @@ public enum DataConverter {
         }
         if isContainer(v) {
             guard let d = try? JSONSerialization.data(withJSONObject: v, options: [.sortedKeys]),
-                  let s = String(data: d, encoding: .utf8) else { return "" }
+                  let s = d.utf8String else { return "" }
             return s
         }
         return "\(v)"
