@@ -56,6 +56,12 @@ let records = DataConverter.csvRecords("a,b\n\"multi\nline\",z")   // raw fields
 - CSV output requires a JSON **array of objects**; TOML output requires a **top-level object**.
 - YAML and TOML are output formats only; they are not accepted as `from` values.
 
+## For agents
+
+Read `CONTRIBUTING.md` first: the folder layout and the PR rules. `swift test` is the whole
+check, and a new test must fail before the change it covers. `CLAUDE.md` / `AGENTS.md` carry a
+module map.
+
 ## License
 
 MIT

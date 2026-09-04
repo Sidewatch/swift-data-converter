@@ -3,19 +3,13 @@ import PackageDescription
 
 let package = Package(
     name: "DataConverter",
-    platforms: [
-        .iOS(.v13),
-        .macOS(.v10_15),
-        .tvOS(.v13),
-        .watchOS(.v6),
-        .visionOS(.v1)
-    ],
+    platforms: [.macOS(.v14)],
     products: [
         .library(name: "DataConverter", targets: ["DataConverter"]),
     ],
     targets: [
         .target(name: "DataConverter", path: "Sources",
-                swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
+                swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "DataConverterTests", dependencies: ["DataConverter"], path: "Tests"),
     ]
 )
