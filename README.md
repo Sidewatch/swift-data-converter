@@ -14,8 +14,8 @@ A dependency-free data-format converter that routes everything through a JSON va
 
 ## Requirements
 
-- iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+ / visionOS 1.0+
-- Swift 5.9+
+- macOS 14+ (Foundation only; other Apple platforms at SwiftPM's default minimums)
+- Swift 6.0+ (Swift 6 language mode)
 
 ## Installation
 
