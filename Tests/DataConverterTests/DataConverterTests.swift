@@ -2,12 +2,17 @@
 //  DataConverterTests.swift
 //  Tests for SwiftDataConverter
 //
+//  Tests for `DataConverter.convert` between JSON, YAML, TOML and the other formats it
+//  supports, including malformed input.
+//
 //  Created by David Sherlock on 7/9/26.
 //
 
 import XCTest
 @testable import DataConverter
 
+/// Tests for `DataConverter.convert` between JSON, YAML, TOML and the other formats it
+/// supports, including malformed input.
 final class DataConverterTests: XCTestCase {
 
     // MARK: - convert

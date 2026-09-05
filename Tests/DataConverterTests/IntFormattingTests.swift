@@ -10,6 +10,7 @@
 import XCTest
 @testable import DataConverter
 
+/// Tests for the `Int` formatting extensions: locale-grouped thousands and byte-size labels.
 final class IntFormattingTests: XCTestCase {
 
     func testGroupedUsesTheLocalesThousandsSeparator() {
