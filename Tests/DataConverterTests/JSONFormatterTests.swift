@@ -1,3 +1,12 @@
+//
+//  JSONFormatterTests.swift
+//  DataConverterTests
+//
+//  Covers ``JSONFormatter``.
+//
+//  Created by David Sherlock on 8/6/26.
+//
+
 import XCTest
 @testable import DataConverter
 

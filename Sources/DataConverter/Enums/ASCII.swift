@@ -1,3 +1,12 @@
+//
+//  ASCII.swift
+//  DataConverter
+//
+//  The bytes the CSV grammar is made of.
+//
+//  Created by David Sherlock on 9/5/26.
+//
+
 /// The bytes the CSV grammar is made of. Every delimiter is a single ASCII byte, and UTF-8
 /// continuation bytes are all ≥ 0x80, so a byte scanner passes multi-byte glyphs through untouched.
 enum ASCII {

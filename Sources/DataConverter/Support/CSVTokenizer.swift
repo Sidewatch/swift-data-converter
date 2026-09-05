@@ -1,3 +1,12 @@
+//
+//  CSVTokenizer.swift
+//  DataConverter
+//
+//  Tokenizes CSV text into records of raw fields, header row included.
+//
+//  Created by David Sherlock on 9/5/26.
+//
+
 import Foundation
 
 /// Tokenizes CSV text into records of raw fields, header row included.
