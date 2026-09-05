@@ -9,6 +9,7 @@ A dependency-free data-format converter that routes everything through a JSON va
 ## Module map
 
 - `Enums/` — ASCII: the delimiter bytes
+- `Extensions/` — one extension per Foundation idiom: Data+UTF8, Int+ByteSize, Int+Grouped
 - `Support/` — CSVTokenizer: the quote-aware byte scanner, one method per state and per step
 - `Core/` — the engine: DataConverter, JSONFormatter
 
