@@ -15,3 +15,5 @@ A dependency-free data-format converter that routes everything through a JSON va
 ## Rules
 
 Read `CONTRIBUTING.md` before changing anything: it is the layout and PR rulebook for this package.
+
+- **Auditing? Read `AUDIT.md` first** — what the last full audit checked and fixed, and the known non-issues to skip; extend it, do not redo it.
