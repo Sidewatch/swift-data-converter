@@ -9,7 +9,8 @@ A dependency-free data-format converter that routes everything through a JSON va
 ## Module map
 
 - `Enums/` — ASCII: the delimiter bytes
-- `Support/` — CSVTokenizer: the quote-aware byte scanner, one method per state and per step
+- `Extensions/` — one extension per Foundation idiom: Data+UTF8, Int+ByteSize, Int+Grouped
+- `Support/` — CSVTokenizer: the quote-aware byte scanner, one method per state and per step; CellOrder: how one grid cell orders against another (`compare`, `permutation(of:by:ascending:nullsFirst:)`)
 - `Core/` — the engine: DataConverter, JSONFormatter
 
 ## Rules

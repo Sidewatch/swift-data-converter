@@ -8,6 +8,7 @@ A dependency-free data-format converter that routes everything through a JSON va
 - 🧾 **Quote-aware CSV tokenizer** — `DataConverter.csvRecords(_:)` handles quoted commas, multiline quoted fields, doubled-quote escapes, and LF / CRLF / bare-CR row endings
 - 🗂 **Header-mapped CSV parsing** — `DataConverter.parseCSV(_:)` maps the header row onto row dictionaries, de-duplicating repeated headers (`name`, `name_2`, …) and padding short rows
 - 🟨 **YAML & TOML emitters** — block-style YAML with minimal quoting; TOML with `[table]` / `[[array-of-tables]]` sections and bare keys where legal (both emit-only; parsing them back would need a real library)
+- 🔢 **One cell-ordering rule for every grid** — `CellOrder.compare(_:_:nullsFirst:)` orders two cell texts numerically when both are numbers ("9" before "10", scientific and negative values right) and Finder-style otherwise, with SQL `NULL` first on request; `CellOrder.permutation(of:by:ascending:)` sorts rows by a column stably and hands back the row order so a parallel array (rowids) can follow
 - ⚠️ **Friendly errors, no throws** — unparseable input or shape mismatches come back as `"⚠︎ …"` messages (e.g. "TOML needs a top-level object"), so a converter UI can show the result verbatim
 - 🪶 **Zero dependencies** — Foundation only
 - 🍎 **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS
@@ -46,6 +47,11 @@ DataConverter.convert(#"{"server":{"host":"x","ports":[80,443]}}"#, from: "JSON"
 // The CSV layer is reusable on its own.
 let rows = DataConverter.parseCSV("a,b\n\"x,y\",z")   // [["a": "x,y", "b": "z"]]
 let records = DataConverter.csvRecords("a,b\n\"multi\nline\",z")   // raw fields, header included
+
+// One ordering rule for every grid: numbers as numbers, names as Finder sorts them, ties stable.
+let rows = [["b", "10"], ["a", "9"], ["c", "9"]]
+CellOrder.permutation(of: rows, by: 1, ascending: true)          // [1, 2, 0]
+CellOrder.compare("NULL", "-5", nullsFirst: true)              // .orderedAscending
 ```
 
 `from` accepts `"CSV"` (anything else parses as JSON); `to` accepts `"YAML"`, `"TOML"`, `"CSV"` (anything else emits pretty JSON).
