@@ -9,6 +9,7 @@ A dependency-free data-format converter that routes everything through a JSON va
 - 🗂 **Header-mapped CSV parsing** — `DataConverter.parseCSV(_:)` maps the header row onto row dictionaries, de-duplicating repeated headers (`name`, `name_2`, …) and padding short rows
 - 🟨 **YAML & TOML emitters** — block-style YAML with minimal quoting; TOML with `[table]` / `[[array-of-tables]]` sections and bare keys where legal (both emit-only; parsing them back would need a real library)
 - 🔢 **One cell-ordering rule for every grid** — `CellOrder.compare(_:_:nullsFirst:)` orders two cell texts numerically when both are numbers ("9" before "10", scientific and negative values right) and Finder-style otherwise, with SQL `NULL` first on request; `CellOrder.permutation(of:by:ascending:)` sorts rows by a column stably and hands back the row order so a parallel array (rowids) can follow
+- 🔐 **dotenv** — `DotEnv.parse(_:)` reads a `.env` file as `KEY=value` entries the way the loaders do (`export` dropped, double quotes with escapes and over lines, single quotes literal, an unquoted value cut at ` #`); `DotEnv.shouldMask(key:value:)` names what a screen should bullet out until asked — secret words in the key, credentials in a URL
 - ⚠️ **Friendly errors, no throws** — unparseable input or shape mismatches come back as `"⚠︎ …"` messages (e.g. "TOML needs a top-level object"), so a converter UI can show the result verbatim
 - 🪶 **Zero dependencies** — Foundation only
 - 🍎 **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS
@@ -52,6 +53,10 @@ let records = DataConverter.csvRecords("a,b\n\"multi\nline\",z")   // raw fields
 let rows = [["b", "10"], ["a", "9"], ["c", "9"]]
 CellOrder.permutation(of: rows, by: 1, ascending: true)          // [1, 2, 0]
 CellOrder.compare("NULL", "-5", nullsFirst: true)              // .orderedAscending
+
+// A .env file as entries, and which to show as bullets.
+let env = DotEnv.parse("export API_KEY=abc # prod\nPORT=3000\n")
+env.map { ($0.key, DotEnv.shouldMask(key: $0.key, value: $0.value) ? DotEnv.mask : $0.value) }   // [("API_KEY", "••••••••"), ("PORT", "3000")]
 ```
 
 `from` accepts `"CSV"` (anything else parses as JSON); `to` accepts `"YAML"`, `"TOML"`, `"CSV"` (anything else emits pretty JSON).
