@@ -66,6 +66,56 @@ public enum DotEnv {
         return out
     }
 
+    /// `text` with the value on `line` (1-based, an ``Entry``'s) replaced by `value`, everything
+    /// else on the line kept: `export`, the key, the spacing around `=`, and a trailing comment.
+    /// A value that needs quoting — spaces, a `#`, a quote, a newline, or nothing at all when the
+    /// old one was quoted — goes in double quotes with `\\` and `"` escaped (and `\n` for a newline);
+    /// a plain value stays bare. The old line's quoting style is kept when it still fits.
+    ///
+    /// - Returns: The rewritten text, or `text` unchanged when `line` is not an entry.
+    public static func replacingValue(in text: String, line: Int, with value: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        guard line >= 1, line <= lines.count else { return text }
+        let old = lines[line - 1]
+        let trimmed = old.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let eq = old.firstIndex(of: "="), !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return text }
+        let head = String(old[...eq])
+        var rest = String(old[old.index(after: eq)...])
+        let leading = rest.prefix { $0 == " " }
+        rest = String(rest.dropFirst(leading.count))
+        var comment = ""
+        var wasQuoted = false
+        if rest.hasPrefix("\"") {
+            wasQuoted = true
+            if let close = closingDoubleQuote(in: rest) { comment = String(rest[rest.index(after: close)...]) }
+        } else if rest.hasPrefix("'") {
+            wasQuoted = true
+            let body = rest.dropFirst()
+            if let close = body.firstIndex(of: "'") { comment = String(body[body.index(after: close)...]) }
+        } else if let hash = rest.range(of: " #") {
+            comment = String(rest[hash.lowerBound...])
+        }
+        let needsQuotes = wasQuoted || value.isEmpty || value.contains(where: { $0 == " " || $0 == "#" || $0 == "\"" || $0 == "'" || $0 == "\n" || $0 == "\t" })
+        let rendered = needsQuotes ? "\"" + escape(value) + "\"" : value
+        lines[line - 1] = head + leading + rendered + comment
+        return lines.joined(separator: "\n")
+    }
+
+    /// `\\`, `"` and the newline / tab escapes for a double-quoted value.
+    private static func escape(_ s: String) -> String {
+        var out = ""
+        for c in s {
+            switch c {
+            case "\\": out += "\\\\"
+            case "\"": out += "\\\""
+            case "\n": out += "\\n"
+            case "\t": out += "\\t"
+            default: out.append(c)
+            }
+        }
+        return out
+    }
+
     /// Whether a preview should show the value as ``mask`` until asked: the key names a
     /// secret (KEY, TOKEN, SECRET, PASSWORD, PASSWD, PWD, PRIVATE, CREDENTIAL(S), AUTH,
     /// SIGNATURE, SALT, DSN, as a word), or the value is a URL carrying `user:pass@`.

@@ -36,3 +36,4 @@ a CR LF pair ending one row, a last field with no terminator), `DataConverter`'s
 - 18 Sep 2026 — logic review (every source and test file, line by line), Claude with David.
 - 22 Sep 2026 — `CellOrder` moved in from Sidewatch (`Support/CellOrder.swift`; the CSV viewer and the database grid share it), made public, first tests written (`CellOrderTests`).
 - 22 Sep 2026 — `DotEnv` added (`Support/`), `DotEnvTests`.
+- 23 Sep 2026 — `DotEnv.replacingValue(in:line:with:)` (the .env table's in-place edits write through it).

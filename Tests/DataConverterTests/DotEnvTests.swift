@@ -43,6 +43,26 @@ final class DotEnvTests: XCTestCase {
         XCTAssertEqual(entries[8].value, "tab\there \"quoted\" $5")
     }
 
+    func testReplacingAValueKeepsTheLineAroundItAndRoundTrips() {
+        let text = "# c\nexport A = one # note\nB=\"two words\" # kept\nC='lit'\nD=plain\nE=\n"
+        let a = DotEnv.replacingValue(in: text, line: 2, with: "uno")
+        XCTAssertEqual(a.components(separatedBy: "\n")[1], "export A = uno # note", "export, the spacing and the comment stay")
+        let b = DotEnv.replacingValue(in: text, line: 3, with: "three words")
+        XCTAssertEqual(b.components(separatedBy: "\n")[2], "B=\"three words\" # kept", "a quoted line stays quoted, its comment kept")
+        let c = DotEnv.replacingValue(in: text, line: 4, with: "it's \"q\"")
+        XCTAssertEqual(c.components(separatedBy: "\n")[3], "C=\"it's \\\"q\\\"\"", "a single-quoted line moves to double quotes when the value needs escapes")
+        let d = DotEnv.replacingValue(in: text, line: 5, with: "has space")
+        XCTAssertEqual(d.components(separatedBy: "\n")[4], "D=\"has space\"", "a bare value is quoted once it needs it")
+        let e = DotEnv.replacingValue(in: text, line: 6, with: "x")
+        XCTAssertEqual(e.components(separatedBy: "\n")[5], "E=x")
+        for (edited, line, value) in [(a, 2, "uno"), (b, 3, "three words"), (c, 4, "it's \"q\""), (d, 5, "has space"), (e, 6, "x")] {
+            XCTAssertEqual(DotEnv.parse(edited).first { $0.line == line }?.value, value, "line \(line) reads back")
+        }
+        XCTAssertEqual(DotEnv.replacingValue(in: text, line: 1, with: "x"), text, "a comment line is not an entry")
+        XCTAssertEqual(DotEnv.replacingValue(in: text, line: 99, with: "x"), text)
+        XCTAssertEqual(DotEnv.replacingValue(in: "K=v\n", line: 1, with: "multi\nline"), "K=\"multi\\nline\"\n")
+    }
+
     func testEmptyAndCommentOnlyFilesHaveNoEntries() {
         XCTAssertEqual(DotEnv.parse(""), [])
         XCTAssertEqual(DotEnv.parse("# just\n\n# comments\n"), [])
