@@ -23,6 +23,10 @@ struct CSVTokenizer {
     private var field = ""
     private var row: [String] = []
     private var records: [[String]] = []
+    /// Where the current raw field began (its opening quote, when quoted).
+    private var fieldStart = 0
+    private var rowRanges: [Range<Int>] = []
+    private var recordRanges: [[Range<Int>]] = []
 
     private init(_ text: String) { bytes = Array(text.utf8) }
 
@@ -30,6 +34,15 @@ struct CSVTokenizer {
     static func records(in text: String) -> [[String]] {
         var tokenizer = CSVTokenizer(text)
         return tokenizer.run()
+    }
+
+    /// Every record of `text` as the UTF-8 byte range of each RAW field — from a field's first
+    /// byte (its opening quote, when quoted) to just before its separator or line break — so
+    /// an edit can put one field back exactly where it was (`CSVEdit`).
+    static func fieldRanges(in text: String) -> [[Range<Int>]] {
+        var tokenizer = CSVTokenizer(text)
+        _ = tokenizer.run()
+        return tokenizer.recordRanges
     }
 
     private mutating func run() -> [[String]] {
@@ -60,11 +73,11 @@ struct CSVTokenizer {
         case ASCII.quote:
             flush(); inQuotes = true; advance(by: 1)
         case ASCII.comma:
-            endField(); advance(by: 1)
+            endField(); advancePastDelimiter(by: 1)
         case ASCII.cr:
-            endRow(); advance(by: next(is: ASCII.lf) ? 2 : 1)   // CRLF is one terminator; bare CR also ends a row
+            endRow(); advancePastDelimiter(by: next(is: ASCII.lf) ? 2 : 1)   // CRLF is one terminator; bare CR also ends a row
         case ASCII.lf:
-            endRow(); advance(by: 1)
+            endRow(); advancePastDelimiter(by: 1)
         default:
             index += 1
         }
@@ -78,12 +91,15 @@ struct CSVTokenizer {
     /// Moves past `n` bytes and starts a fresh run there.
     private mutating func advance(by n: Int) { index += n; runStart = index }
 
+    /// Moves past a separator or line break: the next raw field begins right after it.
+    private mutating func advancePastDelimiter(by n: Int) { advance(by: n); fieldStart = index }
+
     /// Appends the pending run to the field.
     private mutating func flush() {
         if index > runStart { field += String(decoding: bytes[runStart..<index], as: UTF8.self) }
     }
 
-    private mutating func endField() { flush(); row.append(field); field = "" }
+    private mutating func endField() { flush(); row.append(field); field = ""; rowRanges.append(fieldStart..<index) }
 
-    private mutating func endRow() { endField(); records.append(row); row = [] }
+    private mutating func endRow() { endField(); records.append(row); row = []; recordRanges.append(rowRanges); rowRanges = [] }
 }

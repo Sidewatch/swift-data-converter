@@ -10,7 +10,7 @@ A dependency-free data-format converter that routes everything through a JSON va
 
 - `Enums/` — ASCII: the delimiter bytes
 - `Extensions/` — one extension per Foundation idiom: Data+UTF8, Int+ByteSize, Int+Grouped
-- `Support/` — CSVTokenizer: the quote-aware byte scanner, one method per state and per step; CellOrder: how one grid cell orders against another (`compare`, `permutation(of:by:ascending:nullsFirst:)`); DotEnv: a `.env` file as entries (`parse`), the masking rule (`shouldMask(key:value:)`, `mask`) and `replacingValue(in:line:with:)` for an edited value
+- `Support/` — CSVTokenizer: the quote-aware byte scanner, one method per state and per step; CellOrder: how one grid cell orders against another (`compare`, `permutation(of:by:ascending:nullsFirst:)`); DotEnv: a `.env` file as entries (`parse`), the masking rule (`shouldMask(key:value:)`, `mask`) and `replacingValue(in:line:with:)` for an edited value; CSVEdit: one CSV field rewritten in place (`replacingField`, `fieldReplacement` with the old field's range, `encoded` quoting) over the tokenizer's `fieldRanges(in:)`
 - `Core/` — the engine: DataConverter, JSONFormatter
 
 ## Rules
