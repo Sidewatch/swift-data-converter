@@ -38,3 +38,4 @@ a CR LF pair ending one row, a last field with no terminator), `DataConverter`'s
 - 22 Sep 2026 — `DotEnv` added (`Support/`), `DotEnvTests`.
 - 23 Sep 2026 — `DotEnv.replacingValue(in:line:with:)` (the .env table's in-place edits write through it).
 - 24 Sep 2026 — `CSVEdit` (`Support/`) and `CSVTokenizer.fieldRanges(in:)` (the CSV table's in-place cell edits); `CSVEditTests`, nine tests; mutant: a field start not reset after a delimiter fails five.
+- 25 Sep 2026 — `JSONEdit` (site by path, typed encoder), `YAMLEdit` (the YAML encoder), `StructuredEdit` (the shared vocabulary and escaper); `JSONEditTests`, `YAMLEditTests`.
