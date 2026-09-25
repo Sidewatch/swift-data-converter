@@ -73,6 +73,46 @@ public enum DotEnv {
     /// a plain value stays bare. The old line's quoting style is kept when it still fits.
     ///
     /// - Returns: The rewritten text, or `text` unchanged when `line` is not an entry.
+    /// One entry's NAME rewritten in place, keeping `export`, the spacing around the `=` and
+    /// everything after it (25 Sep 2026, David: "it's not possible to edit key in preview mode of
+    /// .env"). The new name is taken as typed with the characters a `.env` name cannot hold
+    /// removed — whitespace, `=` and `#` — and an empty result leaves the file alone, since a
+    /// nameless entry is not something a table should be able to write.
+    public static func replacingKey(in text: String, line: Int, with key: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        guard line >= 1, line <= lines.count else { return text }
+        let old = lines[line - 1]
+        let trimmed = old.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let eq = old.firstIndex(of: "="), !trimmed.isEmpty, !trimmed.hasPrefix("#") else { return text }
+        let clean = sanitisedKey(key)
+        guard !clean.isEmpty else { return text }
+        // The head is everything before the `=`: leading spaces, an `export`, the old name and
+        // any spaces before the sign. Only the NAME inside it changes.
+        let head = String(old[..<eq])
+        let leading = head.prefix { $0 == " " || $0 == "\t" }
+        var body = String(head.dropFirst(leading.count))
+        let trailing = String(body.reversed().prefix { $0 == " " || $0 == "\t" }.reversed())
+        body = String(body.dropLast(trailing.count))
+        var prefix = ""
+        if body.hasPrefix("export "), body.count > 7 {
+            let afterExport = body.dropFirst(7)
+            prefix = "export " + String(afterExport.prefix { $0 == " " })
+        }
+        let tail = String(old[eq...])
+        var rebuilt = String(leading)
+        rebuilt += prefix
+        rebuilt += clean
+        rebuilt += trailing
+        rebuilt += tail
+        lines[line - 1] = rebuilt
+        return lines.joined(separator: "\n")
+    }
+
+    /// `key` as a `.env` name: what the format cannot hold, removed.
+    public static func sanitisedKey(_ key: String) -> String {
+        String(key.filter { !$0.isWhitespace && $0 != "=" && $0 != "#" })
+    }
+
     public static func replacingValue(in text: String, line: Int, with value: String) -> String {
         var lines = text.components(separatedBy: "\n")
         guard line >= 1, line <= lines.count else { return text }

@@ -81,4 +81,36 @@ final class DotEnvTests: XCTestCase {
         XCTAssertFalse(DotEnv.shouldMask(key: "EMAIL", value: "someone@example.com"))
         XCTAssertEqual(DotEnv.mask, "••••••••")
     }
+
+    // MARK: - Renaming a key
+
+    func testReplacingKeyKeepsExportSpacingAndEverythingAfterTheSign() {
+        let text = "NAME=grove\nexport  API_KEY = abc  # prod\n  PORT   =3000\n# a comment\n"
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 1, with: "TITLE"),
+                       "TITLE=grove\nexport  API_KEY = abc  # prod\n  PORT   =3000\n# a comment\n")
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 2, with: "TOKEN"),
+                       "NAME=grove\nexport  TOKEN = abc  # prod\n  PORT   =3000\n# a comment\n",
+                       "export, the spacing and the trailing comment all survive")
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 3, with: "HTTP_PORT"),
+                       "NAME=grove\nexport  API_KEY = abc  # prod\n  HTTP_PORT   =3000\n# a comment\n",
+                       "the indent and the spaces before the sign are kept")
+    }
+
+    func testAKeyIsSanitisedAndAnImpossibleOneLeavesTheFileAlone() {
+        let text = "NAME=grove\n"
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 1, with: "MY NAME"), "MYNAME=grove\n", "a .env name holds no spaces")
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 1, with: "A=B#C"), "ABC=grove\n")
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 1, with: "   "), text, "nothing left to name it with")
+        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 4, with: "X"), text, "no such line")
+        XCTAssertEqual(DotEnv.replacingKey(in: "# just a comment\n", line: 1, with: "X"), "# just a comment\n")
+    }
+
+    func testRenamingThenReadingBackGivesTheNewNameAndTheSameValue() throws {
+        let text = "export DB_URL=\"postgres://app:s3cret@db/app\"  # main\n"
+        let renamed = DotEnv.replacingKey(in: text, line: 1, with: "DATABASE_URL")
+        let entries = DotEnv.parse(renamed)
+        XCTAssertEqual(entries.map(\.key), ["DATABASE_URL"])
+        XCTAssertEqual(entries.first?.value, "postgres://app:s3cret@db/app", "the value is untouched by a rename")
+        XCTAssertTrue(renamed.contains("# main"))
+    }
 }
