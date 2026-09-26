@@ -7,8 +7,11 @@ let package = Package(
     products: [
         .library(name: "DataConverter", targets: ["DataConverter"]),
     ],
+    dependencies: [
+        .package(path: "../swift-foundation-extensions"),
+    ],
     targets: [
-        .target(name: "DataConverter", path: "Sources",
+        .target(name: "DataConverter", dependencies: [.product(name: "FoundationExtensions", package: "swift-foundation-extensions")], path: "Sources",
                 swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "DataConverterTests", dependencies: ["DataConverter"], path: "Tests"),
     ]

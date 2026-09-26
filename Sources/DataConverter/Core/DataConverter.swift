@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import FoundationExtensions
 
 /// Dependency-free data-format conversion via a JSON value hub. Input JSON or CSV,
 /// output pretty JSON / YAML / TOML / CSV. (YAML/TOML are emit-only — parsing them
