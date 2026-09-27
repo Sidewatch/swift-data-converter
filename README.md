@@ -78,4 +78,4 @@ module map.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
