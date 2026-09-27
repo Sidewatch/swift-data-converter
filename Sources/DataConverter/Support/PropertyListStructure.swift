@@ -12,7 +12,7 @@ import Foundation
 
 /// A property list, in any format Foundation reads (binary `bplist00`, XML, OpenStep text), as the
 /// structure a tree shows. Dictionary keys come back SORTED because Foundation's dictionary loses
-/// the file's order (swift-code-highlighting's `PlistStructure` reads an XML plist in order, with
+/// the file's order (swift-code-kit's CodeHighlighting's `PlistStructure` reads an XML plist in order, with
 /// edit sites). Dates are ISO 8601, data is its byte count, booleans are told from numbers.
 public enum PropertyListStructure {
     /// Whether `head` (the file's first bytes) is a binary property list.

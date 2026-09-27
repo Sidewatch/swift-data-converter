@@ -11,7 +11,7 @@
 import Foundation
 
 /// The writing half of a YAML cell edit; finding WHERE the member sits needs the grammar and
-/// lives with it (`YAMLStructure.site(in:path:)` in swift-code-highlighting). A scalar stays plain
+/// lives with it (`YAMLStructure.site(in:path:)` in swift-code-kit's CodeHighlighting). A scalar stays plain
 /// when YAML would read it back as the same text, and is double-quoted when it would not.
 public enum YAMLEdit {
     /// The kind of scalar a value was before the edit.

@@ -11,7 +11,7 @@
 import Foundation
 
 /// The writing half of an XML tree edit; the finder lives with the grammar
-/// (`XMLStructure.site(in:path:)` in swift-code-highlighting). Text content escapes `&`, `<` and
+/// (`XMLStructure.site(in:path:)` in swift-code-kit's CodeHighlighting). Text content escapes `&`, `<` and
 /// `>`; an attribute value is double-quoted and escapes `"` too; an attribute name is written as
 /// typed, without the `@` the tree shows it with.
 public enum XMLEdit {

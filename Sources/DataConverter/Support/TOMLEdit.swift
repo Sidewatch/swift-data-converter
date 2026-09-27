@@ -11,7 +11,7 @@
 import Foundation
 
 /// The writing half of a TOML cell edit; the finder lives with the grammar
-/// (`TOMLStructure.site(in:path:)` in swift-code-highlighting). A string is a basic `"…"` string
+/// (`TOMLStructure.site(in:path:)` in swift-code-kit's CodeHighlighting). A string is a basic `"…"` string
 /// with escapes; a number stays a number only when the text is one; a key is bare when TOML
 /// allows it (`A-Za-z0-9_-`) and quoted otherwise.
 public enum TOMLEdit {

@@ -11,7 +11,7 @@
 import Foundation
 
 /// The writing half of a property-list tree edit; the finder lives with the grammar
-/// (`PlistStructure.site(in:path:)` in swift-code-highlighting). A string's content is
+/// (`PlistStructure.site(in:path:)` in swift-code-kit's CodeHighlighting). A string's content is
 /// XML-escaped; a number stays bare only when the text is one; a boolean's site is its whole
 /// element, so `true`/`false` write `<true/>`/`<false/>` and any other text a `<string>` element.
 public enum PlistEdit {
