@@ -59,8 +59,12 @@ final class JSONLinesTests: XCTestCase {
     func testTheDocumentReadsAsAnOrderedSequenceOfRecords() {
         guard case .sequence(let items)? = JSONLines.value(of: doc) else { return XCTFail("did not parse") }
         XCTAssertEqual(items.count, 2)
-        XCTAssertEqual(items[0], .mapping([StructuredPair(key: "type", value: .string("user")),
-                                           StructuredPair(key: "n", value: .integer(1))]))
+        XCTAssertEqual(
+            items[0],
+            .mapping([
+                StructuredPair(key: "type", value: .string("user")),
+                StructuredPair(key: "n", value: .integer(1)),
+            ]))
     }
 
     /// A record that does not parse keeps its place as text: record numbers that silently

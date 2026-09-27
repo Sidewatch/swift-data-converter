@@ -61,7 +61,7 @@ public enum JSONStructure {
         }
 
         private mutating func parseObject(depth: Int) -> StructuredValue? {
-            i += 1                                     // {
+            i += 1  // {
             var pairs: [StructuredPair] = []
             skipWhitespace()
             if current == UInt8(ascii: "}") { i += 1; return .mapping(pairs) }
@@ -83,7 +83,7 @@ public enum JSONStructure {
         }
 
         private mutating func parseArray(depth: Int) -> StructuredValue? {
-            i += 1                                     // [
+            i += 1  // [
             var items: [StructuredValue] = []
             skipWhitespace()
             if current == UInt8(ascii: "]") { i += 1; return .sequence(items) }
@@ -102,7 +102,7 @@ public enum JSONStructure {
         /// A JSON string with its escapes resolved, including surrogate pairs — the tree shows the
         /// TEXT, so `A` must read as `A` and an emoji written as a pair must survive.
         private mutating func parseString() -> String? {
-            i += 1                                     // opening quote
+            i += 1  // opening quote
             var scalars = String.UnicodeScalarView()
             var pendingHigh: UInt32?
 
@@ -124,12 +124,12 @@ public enum JSONStructure {
                     switch e {
                     case UInt8(ascii: "\""): flushHigh(); scalars.append("\"")
                     case UInt8(ascii: "\\"): flushHigh(); scalars.append("\\")
-                    case UInt8(ascii: "/"):  flushHigh(); scalars.append("/")
-                    case UInt8(ascii: "b"):  flushHigh(); scalars.append(Unicode.Scalar(8))
-                    case UInt8(ascii: "f"):  flushHigh(); scalars.append(Unicode.Scalar(12))
-                    case UInt8(ascii: "n"):  flushHigh(); scalars.append("\n")
-                    case UInt8(ascii: "r"):  flushHigh(); scalars.append("\r")
-                    case UInt8(ascii: "t"):  flushHigh(); scalars.append("\t")
+                    case UInt8(ascii: "/"): flushHigh(); scalars.append("/")
+                    case UInt8(ascii: "b"): flushHigh(); scalars.append(Unicode.Scalar(8))
+                    case UInt8(ascii: "f"): flushHigh(); scalars.append(Unicode.Scalar(12))
+                    case UInt8(ascii: "n"): flushHigh(); scalars.append("\n")
+                    case UInt8(ascii: "r"): flushHigh(); scalars.append("\r")
+                    case UInt8(ascii: "t"): flushHigh(); scalars.append("\t")
                     case UInt8(ascii: "u"):
                         guard let code = hex4() else { return nil }
                         if let high = pendingHigh {
@@ -139,8 +139,11 @@ public enum JSONStructure {
                                 if let s = Unicode.Scalar(combined) { scalars.append(s) }
                             } else {
                                 flushHigh()
-                                if code >= 0xD800, code <= 0xDBFF { pendingHigh = code }
-                                else if let s = Unicode.Scalar(code) { scalars.append(s) }
+                                if code >= 0xD800, code <= 0xDBFF {
+                                    pendingHigh = code
+                                } else if let s = Unicode.Scalar(code) {
+                                    scalars.append(s)
+                                }
                             }
                         } else if code >= 0xD800, code <= 0xDBFF {
                             pendingHigh = code
@@ -160,7 +163,7 @@ public enum JSONStructure {
                 guard let run = String(bytes: bytes[start..<i], encoding: .utf8) else { return nil }
                 scalars.append(contentsOf: run.unicodeScalars)
             }
-            return nil                                  // unterminated
+            return nil  // unterminated
         }
 
         private mutating func hex4() -> UInt32? {
@@ -190,10 +193,15 @@ public enum JSONStructure {
             if current == UInt8(ascii: "-") { i += 1 }
             var isInteger = true
             while let c = current {
-                if c >= UInt8(ascii: "0"), c <= UInt8(ascii: "9") { i += 1 }
-                else if c == UInt8(ascii: ".") || c == UInt8(ascii: "e") || c == UInt8(ascii: "E")
-                            || c == UInt8(ascii: "+") || c == UInt8(ascii: "-") { isInteger = false; i += 1 }
-                else { break }
+                if c >= UInt8(ascii: "0"), c <= UInt8(ascii: "9") {
+                    i += 1
+                } else if c == UInt8(ascii: ".") || c == UInt8(ascii: "e") || c == UInt8(ascii: "E")
+                    || c == UInt8(ascii: "+") || c == UInt8(ascii: "-")
+                {
+                    isInteger = false; i += 1
+                } else {
+                    break
+                }
             }
             guard i > start, let text = String(bytes: bytes[start..<i], encoding: .utf8) else { return nil }
             if isInteger, let n = Int(text) { return .integer(n) }

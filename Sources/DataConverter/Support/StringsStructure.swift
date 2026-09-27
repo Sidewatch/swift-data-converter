@@ -40,10 +40,14 @@ public enum StringsStructure {
     }
 
     /// The one edit a typed key or value means; a `"key";` shorthand gains ` = "value"`.
-    public static func replacement(in text: String, path: [PathComponent], key: Bool, with typed: String) -> (range: NSRange, replacement: String)? {
+    public static func replacement(in text: String, path: [PathComponent], key: Bool, with typed: String) -> (
+        range: NSRange, replacement: String
+    )? {
         guard path.count == 1, case .key(let name) = path[0], let entry = parse(text).first(where: { $0.key == name }) else { return nil }
         if key { return (entry.keyRange, encoded(typed)) }
-        guard let valueRange = entry.valueRange else { return (NSRange(location: NSMaxRange(entry.keyRange), length: 0), " = " + encoded(typed)) }
+        guard let valueRange = entry.valueRange else {
+            return (NSRange(location: NSMaxRange(entry.keyRange), length: 0), " = " + encoded(typed))
+        }
         return (valueRange, encoded(typed))
     }
 
@@ -77,12 +81,12 @@ public enum StringsStructure {
             while i < chars.count {
                 let c = chars[i]
                 if c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D { i += 1; continue }
-                if c == 0x2F, i + 1 < chars.count, chars[i + 1] == 0x2A {   // /*
+                if c == 0x2F, i + 1 < chars.count, chars[i + 1] == 0x2A {  // /*
                     i += 2
                     while i + 1 < chars.count, !(chars[i] == 0x2A && chars[i + 1] == 0x2F) { i += 1 }
                     i = min(chars.count, i + 2); continue
                 }
-                if c == 0x2F, i + 1 < chars.count, chars[i + 1] == 0x2F {   // //
+                if c == 0x2F, i + 1 < chars.count, chars[i + 1] == 0x2F {  // //
                     while i < chars.count, chars[i] != 0x0A { i += 1 }
                     continue
                 }
@@ -112,19 +116,20 @@ public enum StringsStructure {
             guard let key = token() else { i += 1; continue }
             skipSpaceAndComments()
             var value: (text: String, range: NSRange)?
-            if i < chars.count, chars[i] == 0x3D {   // =
+            if i < chars.count, chars[i] == 0x3D {  // =
                 i += 1; skipSpaceAndComments()
                 value = token()
             }
             skipSpaceAndComments()
-            if i < chars.count, chars[i] == 0x3B { i += 1 }   // ;
+            if i < chars.count, chars[i] == 0x3B { i += 1 }  // ;
             entries.append(Entry(key: key.text, keyRange: key.range, value: value?.text ?? key.text, valueRange: value?.range))
         }
         return entries
     }
 
     private static func isBare(_ c: UInt16) -> Bool {
-        (0x30...0x39).contains(c) || (0x41...0x5A).contains(c) || (0x61...0x7A).contains(c) || c == 0x5F || c == 0x2E || c == 0x2D || c == 0x2F || c == 0x24
+        (0x30...0x39).contains(c) || (0x41...0x5A).contains(c) || (0x61...0x7A).contains(c) || c == 0x5F || c == 0x2E || c == 0x2D
+            || c == 0x2F || c == 0x24
     }
 
     /// The escapes resolved: `\" \\ \n \t \r \0 \a \b \f \v`, `\UXXXX` and `\uXXXX`.
@@ -146,7 +151,11 @@ public enum StringsStructure {
             case "U", "u":
                 var hex = ""
                 for _ in 0..<4 { if let h = it.next() { hex.append(h) } }
-                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) { out.unicodeScalars.append(scalar) } else { out += "\\\(e)" + hex }
+                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) {
+                    out.unicodeScalars.append(scalar)
+                } else {
+                    out += "\\\(e)" + hex
+                }
             default: out.append(e)
             }
         }

@@ -19,7 +19,9 @@ public enum CSVEdit {
     /// header is record 0) became `value`: the range of the old raw field and the text to put
     /// there. A record shorter than `column` gains the commas it needs. Nil when the record
     /// does not exist.
-    public static func fieldReplacement(in text: String, record: Int, column: Int, with value: String) -> (range: Range<String.Index>, replacement: String)? {
+    public static func fieldReplacement(in text: String, record: Int, column: Int, with value: String) -> (
+        range: Range<String.Index>, replacement: String
+    )? {
         let records = CSVTokenizer.fieldRanges(in: text)
         guard records.indices.contains(record), column >= 0 else { return nil }
         let fields = records[record]
@@ -47,7 +49,8 @@ public enum CSVEdit {
     /// `value` as a CSV field: quoted, with quotes doubled, when it holds a comma, a quote, a
     /// line break, or leading / trailing whitespace; otherwise as it is.
     public static func encoded(_ value: String) -> String {
-        let needsQuotes = value.contains(where: { $0 == "," || $0 == "\"" || $0.isNewline })
+        let needsQuotes =
+            value.contains(where: { $0 == "," || $0 == "\"" || $0.isNewline })
             || value.first?.isWhitespace == true || value.last?.isWhitespace == true
         guard needsQuotes else { return value }
         return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""

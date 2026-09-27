@@ -25,18 +25,21 @@ final class CSVEditTests: XCTestCase {
     }
 
     func testReplacesAPlainFieldAndKeepsEverythingElse() {
-        XCTAssertEqual(CSVEdit.replacingField(in: text, record: 1, column: 1, with: "2"),
-                       "name,qty,note\napple,2,\"red, crisp\"\nkiwi,12,\"two\nlines\"\nbanana,3,\n")
+        XCTAssertEqual(
+            CSVEdit.replacingField(in: text, record: 1, column: 1, with: "2"),
+            "name,qty,note\napple,2,\"red, crisp\"\nkiwi,12,\"two\nlines\"\nbanana,3,\n")
     }
 
     func testReplacesAQuotedFieldWithAPlainOne() {
-        XCTAssertEqual(CSVEdit.replacingField(in: text, record: 1, column: 2, with: "green"),
-                       "name,qty,note\napple,1,green\nkiwi,12,\"two\nlines\"\nbanana,3,\n")
+        XCTAssertEqual(
+            CSVEdit.replacingField(in: text, record: 1, column: 2, with: "green"),
+            "name,qty,note\napple,1,green\nkiwi,12,\"two\nlines\"\nbanana,3,\n")
     }
 
     func testARecordAfterAMultilineFieldIsFoundByItsRange() {
-        XCTAssertEqual(CSVEdit.replacingField(in: text, record: 3, column: 0, with: "cherry"),
-                       "name,qty,note\napple,1,\"red, crisp\"\nkiwi,12,\"two\nlines\"\ncherry,3,\n")
+        XCTAssertEqual(
+            CSVEdit.replacingField(in: text, record: 3, column: 0, with: "cherry"),
+            "name,qty,note\napple,1,\"red, crisp\"\nkiwi,12,\"two\nlines\"\ncherry,3,\n")
     }
 
     func testAValueThatNeedsQuotingIsQuotedWithDoubledQuotes() {

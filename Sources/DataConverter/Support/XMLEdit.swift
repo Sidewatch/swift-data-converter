@@ -17,7 +17,8 @@ import Foundation
 public enum XMLEdit {
     /// `text` as element content.
     public static func encodedText(_ text: String) -> String {
-        text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
+        text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(
+            of: ">", with: "&gt;")
     }
 
     /// `text` as a double-quoted attribute value.
@@ -39,7 +40,9 @@ public enum XMLEdit {
         while let amp = rest.firstIndex(of: "&") {
             out += rest[..<amp]
             rest = rest[amp...]
-            guard let semi = rest.firstIndex(of: ";"), rest.distance(from: rest.startIndex, to: semi) <= 10 else { out.append("&"); rest = rest.dropFirst(); continue }
+            guard let semi = rest.firstIndex(of: ";"), rest.distance(from: rest.startIndex, to: semi) <= 10 else {
+                out.append("&"); rest = rest.dropFirst(); continue
+            }
             let name = rest[rest.index(after: rest.startIndex)..<semi]
             let decoded: String?
             switch name {
@@ -49,12 +52,15 @@ public enum XMLEdit {
             case "quot": decoded = "\""
             case "apos": decoded = "'"
             default:
-                if name.hasPrefix("#x"), let v = UInt32(name.dropFirst(2), radix: 16), let s = Unicode.Scalar(v) { decoded = String(s) }
-                else if name.hasPrefix("#"), let v = UInt32(name.dropFirst(1)), let s = Unicode.Scalar(v) { decoded = String(s) }
-                else { decoded = nil }
+                if name.hasPrefix("#x"), let v = UInt32(name.dropFirst(2), radix: 16), let s = Unicode.Scalar(v) {
+                    decoded = String(s)
+                } else if name.hasPrefix("#"), let v = UInt32(name.dropFirst(1)), let s = Unicode.Scalar(v) {
+                    decoded = String(s)
+                } else {
+                    decoded = nil
+                }
             }
-            if let decoded { out += decoded; rest = rest[rest.index(after: semi)...] }
-            else { out.append("&"); rest = rest.dropFirst() }
+            if let decoded { out += decoded; rest = rest[rest.index(after: semi)...] } else { out.append("&"); rest = rest.dropFirst() }
         }
         return out + rest
     }

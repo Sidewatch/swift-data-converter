@@ -13,14 +13,14 @@ import XCTest
 
 final class JSONEditTests: XCTestCase {
     let text = """
-    {
-      "name": "inventory",
-      "port": 3000,
-      "debug": false,
-      "tags": ["a, b", "c:d", null],
-      "db": { "host": "db.internal", "note": "say \\"hi\\"", "retries": -1 }
-    }
-    """
+        {
+          "name": "inventory",
+          "port": 3000,
+          "debug": false,
+          "tags": ["a, b", "c:d", null],
+          "db": { "host": "db.internal", "note": "say \\"hi\\"", "retries": -1 }
+        }
+        """
 
     func raw(_ r: Range<String.Index>?) -> String? { r.map { String(text[$0]) } }
 

@@ -30,8 +30,9 @@ final class JSONFormatterPropertyTests: XCTestCase {
             guard let formatted = JSONFormatter.format(input) else {
                 XCTFail("refused generated-valid input #\(i): \(input)"); continue
             }
-            XCTAssertEqual(JSONFormatter.minify(formatted), JSONFormatter.minify(input),
-                           "token stream changed for #\(i): \(input)\n→\n\(formatted)")
+            XCTAssertEqual(
+                JSONFormatter.minify(formatted), JSONFormatter.minify(input),
+                "token stream changed for #\(i): \(input)\n→\n\(formatted)")
         }
     }
 
@@ -72,9 +73,10 @@ final class JSONFormatterPropertyTests: XCTestCase {
             let input = randomJSON(&rng)
             let out = JSONFormatter.format(input)!
             let before = try! JSONSerialization.jsonObject(with: Data(input.utf8), options: [.fragmentsAllowed])
-            let after  = try! JSONSerialization.jsonObject(with: Data(out.utf8),   options: [.fragmentsAllowed])
-            XCTAssertTrue(NSDictionary(dictionary: ["v": before]).isEqual(to: ["v": after]),
-                          "value changed:\n\(input)\n→\n\(out)")
+            let after = try! JSONSerialization.jsonObject(with: Data(out.utf8), options: [.fragmentsAllowed])
+            XCTAssertTrue(
+                NSDictionary(dictionary: ["v": before]).isEqual(to: ["v": after]),
+                "value changed:\n\(input)\n→\n\(out)")
         }
     }
 
@@ -84,7 +86,7 @@ final class JSONFormatterPropertyTests: XCTestCase {
     private struct SeededRNG: RandomNumberGenerator {
         var state: UInt64
         init(seed: UInt64) { state = seed == 0 ? 0x9E3779B97F4A7C15 : seed }
-        mutating func next() -> UInt64 {          // xorshift64*
+        mutating func next() -> UInt64 {  // xorshift64*
             state ^= state >> 12; state ^= state << 25; state ^= state >> 27
             return state &* 2685821657736338717
         }
@@ -105,7 +107,7 @@ final class JSONFormatterPropertyTests: XCTestCase {
         if depth >= 4 || Int.random(in: 0..<10, using: &rng) < 4 {
             return leaves[Int.random(in: 0..<leaves.count, using: &rng)]
         }
-        let count = Int.random(in: 0..<4, using: &rng)     // 0 exercises the empty-container path
+        let count = Int.random(in: 0..<4, using: &rng)  // 0 exercises the empty-container path
         if Bool.random(using: &rng) {
             let items = (0..<count).map { _ in randomJSON(&rng, depth: depth + 1) }
             return "[" + items.joined(separator: ",") + "]"

@@ -35,6 +35,8 @@ public enum TOMLEdit {
 
     /// Whether `t` reads as a TOML number (underscores, hex/octal/binary, `inf`, `nan`).
     static func looksNumeric(_ t: String) -> Bool {
-        t.range(of: "^[-+]?(\\d[\\d_]*)(\\.\\d[\\d_]*)?([eE][-+]?\\d+)?$|^0x[0-9A-Fa-f_]+$|^0o[0-7_]+$|^0b[01_]+$|^[-+]?(inf|nan)$", options: .regularExpression) != nil
+        t.range(
+            of: "^[-+]?(\\d[\\d_]*)(\\.\\d[\\d_]*)?([eE][-+]?\\d+)?$|^0x[0-9A-Fa-f_]+$|^0o[0-7_]+$|^0b[01_]+$|^[-+]?(inf|nan)$",
+            options: .regularExpression) != nil
     }
 }

@@ -61,16 +61,18 @@ final class JSONFormatterTests: XCTestCase {
 
     func testFormatsNestedObject() {
         let out = JSONFormatter.format(#"{"a":{"b":[1,2]}}"#)!
-        XCTAssertEqual(out, """
-        {
-          "a": {
-            "b": [
-              1,
-              2
-            ]
-          }
-        }
-        """)
+        XCTAssertEqual(
+            out,
+            """
+            {
+              "a": {
+                "b": [
+                  1,
+                  2
+                ]
+              }
+            }
+            """)
     }
 
     /// Regression: an empty container must not consume a level. With the depth bookkeeping
@@ -78,14 +80,16 @@ final class JSONFormatterTests: XCTestCase {
     /// indented one step too shallow while still parsing fine.
     func testEmptyContainerDoesNotShiftFollowingSiblings() {
         let out = JSONFormatter.format(#"{"a":{"b":{},"c":1}}"#)!
-        XCTAssertEqual(out, """
-        {
-          "a": {
-            "b": {},
-            "c": 1
-          }
-        }
-        """)
+        XCTAssertEqual(
+            out,
+            """
+            {
+              "a": {
+                "b": {},
+                "c": 1
+              }
+            }
+            """)
     }
 
     func testEmptyContainersStayOnOneLine() {
@@ -111,8 +115,9 @@ final class JSONFormatterTests: XCTestCase {
         let input = String(repeating: "[", count: depth) + "1" + String(repeating: "]", count: depth)
         let out = JSONFormatter.format(input)!
         // The innermost value sits at exactly `depth` levels — off-by-one bookkeeping shows here.
-        XCTAssertTrue(out.contains("\n" + String(repeating: "  ", count: depth) + "1\n"),
-                      "innermost value is at the wrong depth:\n\(out)")
+        XCTAssertTrue(
+            out.contains("\n" + String(repeating: "  ", count: depth) + "1\n"),
+            "innermost value is at the wrong depth:\n\(out)")
     }
 
     // MARK: - Correctness properties
@@ -128,9 +133,10 @@ final class JSONFormatterTests: XCTestCase {
         for input in inputs {
             let out = JSONFormatter.format(input)!
             let before = try! JSONSerialization.jsonObject(with: Data(input.utf8), options: [.fragmentsAllowed])
-            let after  = try! JSONSerialization.jsonObject(with: Data(out.utf8),   options: [.fragmentsAllowed])
-            XCTAssertTrue(NSDictionary(dictionary: ["v": before]).isEqual(to: ["v": after]),
-                          "value changed for \(input):\n\(out)")
+            let after = try! JSONSerialization.jsonObject(with: Data(out.utf8), options: [.fragmentsAllowed])
+            XCTAssertTrue(
+                NSDictionary(dictionary: ["v": before]).isEqual(to: ["v": after]),
+                "value changed for \(input):\n\(out)")
         }
     }
 
@@ -186,14 +192,16 @@ final class JSONFormatterTests: XCTestCase {
     /// colours); a parse/re-encode formatter would alphabetise and scatter that grouping.
     func testThemeFileKeepsItsPropertyGrouping() {
         // `##"…"##`: the palette values contain `"#`, which would close a single-hash raw string.
-        let theme = ##"{"name":"Test","isDark":true,"background":"#1e1e1e","foreground":"#d4d4d4","ansiBlack":"#000000","ansiRed":"#ff0000"}"##
+        let theme =
+            ##"{"name":"Test","isDark":true,"background":"#1e1e1e","foreground":"#d4d4d4","ansiBlack":"#000000","ansiRed":"#ff0000"}"##
         let out = JSONFormatter.format(theme)!
         let nameAt = out.range(of: "\"name\"")!.lowerBound
         let darkAt = out.range(of: "\"isDark\"")!.lowerBound
-        let bgAt   = out.range(of: "\"background\"")!.lowerBound
+        let bgAt = out.range(of: "\"background\"")!.lowerBound
         let ansiAt = out.range(of: "\"ansiBlack\"")!.lowerBound
-        XCTAssertTrue(nameAt < darkAt && darkAt < bgAt && bgAt < ansiAt,
-                      "grouping lost — keys were sorted:\n\(out)")
+        XCTAssertTrue(
+            nameAt < darkAt && darkAt < bgAt && bgAt < ansiAt,
+            "grouping lost — keys were sorted:\n\(out)")
         XCTAssertTrue(out.contains("\"background\": \"#1e1e1e\""), "colour value altered:\n\(out)")
     }
 }

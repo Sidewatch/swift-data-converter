@@ -26,6 +26,8 @@ final class YAMLEditTests: XCTestCase {
         XCTAssertEqual(YAMLEdit.encodedScalar("null", kind: .null), "null")
         XCTAssertEqual(YAMLEdit.encodedKey("plain-key"), "plain-key")
         XCTAssertEqual(YAMLEdit.encodedKey("with: colon"), "\"with: colon\"")
-        XCTAssertEqual(StructuredEdit.doubleQuoted("a \"q\" \\ \n\ttab\u{1}"), "\"a \\\"q\\\" \\\\ \\n\\ttab\\u0001\"", "the one escaper both formats share")
+        XCTAssertEqual(
+            StructuredEdit.doubleQuoted("a \"q\" \\ \n\ttab\u{1}"), "\"a \\\"q\\\" \\\\ \\n\\ttab\\u0001\"",
+            "the one escaper both formats share")
     }
 }

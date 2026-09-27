@@ -67,7 +67,7 @@ final class DataConverterTests: XCTestCase {
         let records = DataConverter.csvRecords("a,b\n\"x,y\",\"line1\nline2\"")
         XCTAssertEqual(records.count, 2)
         XCTAssertEqual(records[0], ["a", "b"])
-        XCTAssertEqual(records[1], ["x,y", "line1\nline2"])   // quoted comma + embedded newline preserved
+        XCTAssertEqual(records[1], ["x,y", "line1\nline2"])  // quoted comma + embedded newline preserved
     }
 
     func testCSVRecordsUnescapesDoubledQuotes() {
@@ -79,28 +79,28 @@ final class DataConverterTests: XCTestCase {
 
     func testYAMLQuotesTypeLookalikeAndIndicatorStrings() {
         let out = DataConverter.convert(#"{"a":"true","b":"123","c":"- x","d":"'q'","e":"1e3"}"#, from: "JSON", to: "YAML")
-        XCTAssertTrue(out.contains(#"a: "true""#), out)     // stays a string, not a bool
-        XCTAssertTrue(out.contains(#"b: "123""#), out)      // stays a string, not an int
-        XCTAssertTrue(out.contains(#"c: "- x""#), out)      // leading sequence indicator quoted
-        XCTAssertTrue(out.contains(#"d: "'q'""#), out)      // leading single quote preserved
-        XCTAssertTrue(out.contains(#"e: "1e3""#), out)      // float-lookalike quoted
+        XCTAssertTrue(out.contains(#"a: "true""#), out)  // stays a string, not a bool
+        XCTAssertTrue(out.contains(#"b: "123""#), out)  // stays a string, not an int
+        XCTAssertTrue(out.contains(#"c: "- x""#), out)  // leading sequence indicator quoted
+        XCTAssertTrue(out.contains(#"d: "'q'""#), out)  // leading single quote preserved
+        XCTAssertTrue(out.contains(#"e: "1e3""#), out)  // float-lookalike quoted
     }
 
     func testYAMLQuotesUnsafeMappingKeys() {
         let out = DataConverter.convert(##"{"a: b":1,"#c":2}"##, from: "JSON", to: "YAML")
-        XCTAssertTrue(out.contains(#""a: b": 1"#), out)     // colon-bearing key quoted
-        XCTAssertTrue(out.contains(##""#c": 2"##), out)     // '#' key quoted, not a comment
+        XCTAssertTrue(out.contains(#""a: b": 1"#), out)  // colon-bearing key quoted
+        XCTAssertTrue(out.contains(##""#c": 2"##), out)  // '#' key quoted, not a comment
     }
 
     func testTOMLQuotesNonBareKeys() {
         let out = DataConverter.convert(#"{"a b":2,"a.b":1}"#, from: "JSON", to: "TOML")
-        XCTAssertTrue(out.contains(#""a b" = 2"#), out)     // space needs a quoted key
-        XCTAssertTrue(out.contains(#""a.b" = 1"#), out)     // '.' quoted so it isn't a dotted key
+        XCTAssertTrue(out.contains(#""a b" = 2"#), out)  // space needs a quoted key
+        XCTAssertTrue(out.contains(#""a.b" = 1"#), out)  // '.' quoted so it isn't a dotted key
     }
 
     func testTOMLQuotesNonBareTableHeaders() {
         let out = DataConverter.convert(#"{"a.b":{"c":1}}"#, from: "JSON", to: "TOML")
-        XCTAssertTrue(out.contains(#"["a.b"]"#), out)       // header segment quoted, not [a.b]
+        XCTAssertTrue(out.contains(#"["a.b"]"#), out)  // header segment quoted, not [a.b]
     }
 
     func testTOMLEmitsInlineTableInMixedArray() {
@@ -110,7 +110,7 @@ final class DataConverterTests: XCTestCase {
 
     func testEscapesCarriageReturnInYAMLAndTOML() {
         let yaml = DataConverter.convert(#"{"a":"x\ry"}"#, from: "JSON", to: "YAML")
-        XCTAssertTrue(yaml.contains(#"a: "x\ry""#), yaml)   // quoted + escaped, no raw CR
+        XCTAssertTrue(yaml.contains(#"a: "x\ry""#), yaml)  // quoted + escaped, no raw CR
         XCTAssertFalse(yaml.contains("\r"), yaml)
         let toml = DataConverter.convert(#"{"a":"x\ry"}"#, from: "JSON", to: "TOML")
         XCTAssertTrue(toml.contains(#"a = "x\ry""#), toml)
@@ -134,16 +134,16 @@ final class DataConverterTests: XCTestCase {
 
     func testCSVCellSerializesContainersAsJSON() {
         let out = DataConverter.convert(#"[{"a":[1,2],"b":{"k":1}}]"#, from: "JSON", to: "CSV")
-        XCTAssertTrue(out.contains(#""[1,2]""#), out)             // nested array as compact JSON (quoted: contains a comma)
-        XCTAssertTrue(out.contains(#"{""k"":1}"#), out)           // nested object as compact JSON with doubled quotes
-        XCTAssertFalse(out.contains("(\n"), out)                  // no NSArray description text
+        XCTAssertTrue(out.contains(#""[1,2]""#), out)  // nested array as compact JSON (quoted: contains a comma)
+        XCTAssertTrue(out.contains(#"{""k"":1}"#), out)  // nested object as compact JSON with doubled quotes
+        XCTAssertFalse(out.contains("(\n"), out)  // no NSArray description text
     }
 
     func testCSVEscQuotesBareCRAndRoundTrips() {
         let once = DataConverter.convert("a\n\"x\ry\"", from: "CSV", to: "CSV")
-        XCTAssertEqual(once, "a\n\"x\ry\"")                       // CR field stays quoted
+        XCTAssertEqual(once, "a\n\"x\ry\"")  // CR field stays quoted
         let rows = DataConverter.parseCSV(once)
-        XCTAssertEqual(rows.first?["a"] as? String, "x\ry")       // no silent "xy" corruption
+        XCTAssertEqual(rows.first?["a"] as? String, "x\ry")  // no silent "xy" corruption
     }
 
     func testParseCSVDeduplicatesHeaders() {
@@ -159,8 +159,8 @@ final class DataConverterTests: XCTestCase {
         XCTAssertEqual(rows.count, 2)
         XCTAssertEqual(rows[0]["a"] as? String, "1")
         XCTAssertEqual(rows[0]["b"] as? String, "2")
-        XCTAssertEqual(rows[0]["column_3"] as? String, "3")   // extra cell survives
-        XCTAssertEqual(rows[1]["column_3"] as? String, "")    // short rows pad the synthesized column too
+        XCTAssertEqual(rows[0]["column_3"] as? String, "3")  // extra cell survives
+        XCTAssertEqual(rows[1]["column_3"] as? String, "")  // short rows pad the synthesized column too
         let out = DataConverter.convert("a,b\n1,2,3", from: "CSV", to: "JSON")
         XCTAssertTrue(out.contains(#""3""#), out)
     }
@@ -168,9 +168,9 @@ final class DataConverterTests: XCTestCase {
     // Regression: integral floats lost their float type (1.0 → 1) in YAML/TOML output.
     func testIntegralFloatsKeepFloatTypeInYAMLAndTOML() {
         let toml = DataConverter.convert(#"{"a":1.0,"b":2.5,"c":3}"#, from: "JSON", to: "TOML")
-        XCTAssertTrue(toml.contains("a = 1.0"), toml)   // stays a TOML float
+        XCTAssertTrue(toml.contains("a = 1.0"), toml)  // stays a TOML float
         XCTAssertTrue(toml.contains("b = 2.5"), toml)
-        XCTAssertTrue(toml.contains("c = 3"), toml)     // genuine ints stay ints
+        XCTAssertTrue(toml.contains("c = 3"), toml)  // genuine ints stay ints
         let yaml = DataConverter.convert(#"{"a":1.0,"c":3}"#, from: "JSON", to: "YAML")
         XCTAssertTrue(yaml.contains("a: 1.0"), yaml)
         XCTAssertTrue(yaml.contains("c: 3"), yaml)
@@ -185,6 +185,6 @@ final class DataConverterTests: XCTestCase {
 
     func testCSVRecordsFlushesTrailingEmptyField() {
         XCTAssertEqual(DataConverter.csvRecords("a,b\n1,"), [["a", "b"], ["1", ""]])
-        XCTAssertEqual(DataConverter.csvRecords("a,b\n1,2\n"), [["a", "b"], ["1", "2"]])   // trailing newline adds no row
+        XCTAssertEqual(DataConverter.csvRecords("a,b\n1,2\n"), [["a", "b"], ["1", "2"]])  // trailing newline adds no row
     }
 }

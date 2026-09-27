@@ -40,7 +40,9 @@ public enum PropertiesStructure {
     }
 
     /// The one edit a typed key or value means; a key that had no separator gains `=`.
-    public static func replacement(in text: String, path: [PathComponent], key: Bool, with typed: String) -> (range: NSRange, replacement: String)? {
+    public static func replacement(in text: String, path: [PathComponent], key: Bool, with typed: String) -> (
+        range: NSRange, replacement: String
+    )? {
         guard path.count == 1, case .key(let name) = path[0], let entry = parse(text).first(where: { $0.key == name }) else { return nil }
         if key { return (entry.keyRange, encodedKey(typed)) }
         return (entry.valueRange, (entry.separated ? "" : "=") + encodedValue(typed))
@@ -91,7 +93,7 @@ public enum PropertiesStructure {
                 var body = ns.substring(with: lineRange).trimmingCharacters(in: .newlines)
                 var location = lineRange.location
                 position = NSMaxRange(lineRange)
-                if !pieces.isEmpty {   // a continuation's leading whitespace is dropped
+                if !pieces.isEmpty {  // a continuation's leading whitespace is dropped
                     let dropped = body.prefix { $0 == " " || $0 == "\t" || $0 == "\u{0C}" }.count
                     body = String(body.dropFirst(dropped)); location += dropped
                 }
@@ -120,7 +122,7 @@ public enum PropertiesStructure {
         while i < chars.count {
             let c = chars[i]
             if escaped { escaped = false; i += 1; continue }
-            if c == 0x5C { escaped = true; i += 1; continue }   // backslash
+            if c == 0x5C { escaped = true; i += 1; continue }  // backslash
             if c == 0x3D || c == 0x3A || c == 0x20 || c == 0x09 || c == 0x0C { keyEnd = i; break }
             i += 1
         }
@@ -169,7 +171,11 @@ public enum PropertiesStructure {
             case "u":
                 var hex = ""
                 for _ in 0..<4 { if let h = it.next() { hex.append(h) } }
-                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) { out.unicodeScalars.append(scalar) } else { out += "\\u" + hex }
+                if let v = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(v) {
+                    out.unicodeScalars.append(scalar)
+                } else {
+                    out += "\\u" + hex
+                }
             default: out.append(e)
             }
         }

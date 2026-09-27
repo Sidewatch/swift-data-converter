@@ -36,9 +36,9 @@ public enum JSONFormatter {
         forEachToken(json) { kind, text in
             switch kind {
             case .whitespace: break
-            case .colon:      out += ":"
-            case .comma:      out += ","
-            default:          out += text
+            case .colon: out += ":"
+            case .comma: out += ","
+            default: out += text
             }
         }
         return out
@@ -55,10 +55,10 @@ public enum JSONFormatter {
         var trailing = false
         forEachToken(json) { kind, _ in
             switch kind {
-            case .whitespace: break                          // does not separate a comma from a closer
-            case .close:      if lastWasComma { trailing = true }; lastWasComma = false
-            case .comma:      lastWasComma = true
-            default:          lastWasComma = false
+            case .whitespace: break  // does not separate a comma from a closer
+            case .close: if lastWasComma { trailing = true }; lastWasComma = false
+            case .comma: lastWasComma = true
+            default: lastWasComma = false
             }
         }
         return !trailing
@@ -86,9 +86,13 @@ public enum JSONFormatter {
                 var escaped = false
                 while end < json.endIndex {
                     let c = json[end]
-                    if escaped { escaped = false }
-                    else if c == "\\" { escaped = true }
-                    else if c == "\"" { end = json.index(after: end); break }
+                    if escaped {
+                        escaped = false
+                    } else if c == "\\" {
+                        escaped = true
+                    } else if c == "\"" {
+                        end = json.index(after: end); break
+                    }
                     end = json.index(after: end)
                 }
                 body(.string, String(json[iterator..<min(end, json.endIndex)]))
@@ -126,7 +130,7 @@ public enum JSONFormatter {
         var out = ""
         out.reserveCapacity(json.count * 2)
         var depth = 0
-        var pendingOpen: Character?     // held so `{}` and `[]` stay on one line
+        var pendingOpen: Character?  // held so `{}` and `[]` stay on one line
 
         func newline() {
             out += "\n" + String(repeating: indent, count: max(0, depth))
@@ -143,12 +147,12 @@ public enum JSONFormatter {
                     return
                 }
                 out += String(open)
-                depth += 1                  // only a container with content opens a level
+                depth += 1  // only a container with content opens a level
                 newline()
             }
             switch kind {
             case .whitespace:
-                break                       // all original spacing is discarded
+                break  // all original spacing is discarded
             case .open:
                 pendingOpen = Character(text)
             case .close:

@@ -135,7 +135,9 @@ public enum DotEnv {
         } else if let hash = rest.range(of: " #") {
             comment = String(rest[hash.lowerBound...])
         }
-        let needsQuotes = wasQuoted || value.isEmpty || value.contains(where: { $0 == " " || $0 == "#" || $0 == "\"" || $0 == "'" || $0 == "\n" || $0 == "\t" })
+        let needsQuotes =
+            wasQuoted || value.isEmpty
+            || value.contains(where: { $0 == " " || $0 == "#" || $0 == "\"" || $0 == "'" || $0 == "\n" || $0 == "\t" })
         let rendered = needsQuotes ? "\"" + escape(value) + "\"" : value
         lines[line - 1] = head + leading + rendered + comment
         return lines.joined(separator: "\n")

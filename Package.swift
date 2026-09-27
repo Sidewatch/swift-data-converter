@@ -6,15 +6,17 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
-        .library(name: "DataConverter", targets: ["DataConverter"]),
+        .library(name: "DataConverter", targets: ["DataConverter"])
     ],
     dependencies: [
-        .package(path: "../swift-foundation-extensions"),
+        .package(path: "../swift-foundation-extensions")
     ],
     targets: [
-        .target(name: "DataConverter", dependencies: [.product(name: "FoundationExtensions", package: "swift-foundation-extensions")], path: "Sources",
-                resources: [.process("DataConverter/Localizable.xcstrings")],
-                swiftSettings: [.swiftLanguageMode(.v6)]),
+        .target(
+            name: "DataConverter", dependencies: [.product(name: "FoundationExtensions", package: "swift-foundation-extensions")],
+            path: "Sources",
+            resources: [.process("DataConverter/Localizable.xcstrings")],
+            swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "DataConverterTests", dependencies: ["DataConverter"], path: "Tests"),
     ]
 )

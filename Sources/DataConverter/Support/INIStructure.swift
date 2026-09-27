@@ -29,7 +29,9 @@ public enum INIStructure {
         let file = parse(text)
         guard !file.globals.isEmpty || !file.sections.isEmpty else { return nil }
         var pairs = file.globals.map { StructuredPair(key: $0.key, value: $0.typed) }
-        pairs += file.sections.map { StructuredPair(key: $0.name, value: .mapping($0.entries.map { StructuredPair(key: $0.key, value: $0.typed) })) }
+        pairs += file.sections.map {
+            StructuredPair(key: $0.name, value: .mapping($0.entries.map { StructuredPair(key: $0.key, value: $0.typed) }))
+        }
         return .mapping(pairs)
     }
 
@@ -37,7 +39,9 @@ public enum INIStructure {
     public static func typed(_ raw: String) -> StructuredValue {
         let t = raw.trimmingCharacters(in: .whitespaces)
         if let i = Int(t) { return .integer(i) }
-        if let d = Double(t), t.range(of: "^[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?$", options: .regularExpression) != nil { return .number(d) }
+        if let d = Double(t), t.range(of: "^[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?$", options: .regularExpression) != nil {
+            return .number(d)
+        }
         switch t.lowercased() {
         case "true", "yes", "on": return .bool(true)
         case "false", "no", "off": return .bool(false)
@@ -63,12 +67,15 @@ public enum INIStructure {
         case 1:
             guard case .key(let name) = path[0] else { return nil }
             if let entry = file.globals.first(where: { $0.key == name }) { return entry.site }
-            if let section = file.sections.first(where: { $0.name == name }) { return EditSite(key: section.nameRange, value: section.bodyRange) }
+            if let section = file.sections.first(where: { $0.name == name }) {
+                return EditSite(key: section.nameRange, value: section.bodyRange)
+            }
             return nil
         case 2:
             guard case .key(let name) = path[0], case .key(let key) = path[1],
-                  let section = file.sections.first(where: { $0.name == name }),
-                  let entry = section.entries.first(where: { $0.key == key }) else { return nil }
+                let section = file.sections.first(where: { $0.name == name }),
+                let entry = section.entries.first(where: { $0.key == key })
+            else { return nil }
             return entry.site
         default:
             return nil
@@ -78,10 +85,18 @@ public enum INIStructure {
     /// The one edit a typed key or value means: the range to replace and what to write there —
     /// a key with no separator gains ` = ` before its first value; a section rename touches only
     /// the name. Nil when nothing sits at `path`.
-    public static func replacement(in text: String, path: [PathComponent], key: Bool, with typed: String) -> (range: NSRange, replacement: String)? {
+    public static func replacement(in text: String, path: [PathComponent], key: Bool, with typed: String) -> (
+        range: NSRange, replacement: String
+    )? {
         guard let site = site(in: text, path: path) else { return nil }
         if key { return site.key.map { ($0, encodedKey(typed)) } }
-        let separated = site.value.length > 0 || (text as NSString).substring(with: NSRange(location: site.key?.location ?? site.value.location, length: site.value.location - (site.key?.location ?? site.value.location))).contains(where: { $0 == "=" || $0 == ":" })
+        let separated =
+            site.value.length > 0
+            || (text as NSString).substring(
+                with: NSRange(
+                    location: site.key?.location ?? site.value.location,
+                    length: site.value.location - (site.key?.location ?? site.value.location))
+            ).contains(where: { $0 == "=" || $0 == ":" })
         return (site.value, (separated ? "" : " = ") + encodedValue(typed))
     }
 
@@ -100,8 +115,8 @@ public enum INIStructure {
     /// One `key = value` line (continuations joined), with the ranges an edit replaces.
     struct Entry {
         let key: String, keyRange: NSRange
-        let raw: String?          // nil: no separator on the line
-        let valueRange: NSRange   // the value without surrounding quotes; empty at the key's end when there is none
+        let raw: String?  // nil: no separator on the line
+        let valueRange: NSRange  // the value without surrounding quotes; empty at the key's end when there is none
         var typed: StructuredValue { raw.map(INIStructure.typed) ?? .null }
         var site: EditSite { EditSite(key: keyRange, value: valueRange) }
     }
@@ -115,7 +130,7 @@ public enum INIStructure {
         let ns = text as NSString
         var file = File()
         var position = 0
-        var lastEntry: (section: Int?, index: Int)?   // for continuation lines
+        var lastEntry: (section: Int?, index: Int)?  // for continuation lines
         while position < ns.length {
             let lineRange = ns.lineRange(for: NSRange(location: position, length: 0))
             let line = ns.substring(with: lineRange)
@@ -139,19 +154,28 @@ public enum INIStructure {
             }
             if trimmed.hasPrefix("["), let close = trimmed.lastIndex(of: "]") {
                 let name = String(trimmed[trimmed.index(after: trimmed.startIndex)..<close]).trimmingCharacters(in: .whitespaces)
-                let leading = (body as NSString).length - (trimmed as NSString).length + 1   // to the name's first char
+                let leading = (body as NSString).length - (trimmed as NSString).length + 1  // to the name's first char
                 let nameLocation = bodyRange.location + leading + ((trimmed.dropFirst().prefix { $0 == " " }).count)
                 let nameRange = NSRange(location: nameLocation, length: (name as NSString).length)
-                if var previous = file.sections.popLast() { previous.bodyRange.length = lineRange.location - previous.bodyRange.location; file.sections.append(previous) }
-                file.sections.append(Section(name: name, nameRange: nameRange, entries: [], bodyRange: NSRange(location: position, length: 0)))
+                if var previous = file.sections.popLast() {
+                    previous.bodyRange.length = lineRange.location - previous.bodyRange.location; file.sections.append(previous)
+                }
+                file.sections.append(
+                    Section(name: name, nameRange: nameRange, entries: [], bodyRange: NSRange(location: position, length: 0)))
                 lastEntry = nil
                 continue
             }
             let entry = entry(in: body, at: bodyRange.location)
-            if file.sections.isEmpty { file.globals.append(entry); lastEntry = (nil, file.globals.count - 1) }
-            else { file.sections[file.sections.count - 1].entries.append(entry); lastEntry = (file.sections.count - 1, file.sections[file.sections.count - 1].entries.count - 1) }
+            if file.sections.isEmpty {
+                file.globals.append(entry); lastEntry = (nil, file.globals.count - 1)
+            } else {
+                file.sections[file.sections.count - 1].entries.append(entry);
+                lastEntry = (file.sections.count - 1, file.sections[file.sections.count - 1].entries.count - 1)
+            }
         }
-        if var last = file.sections.popLast() { last.bodyRange.length = max(0, ns.length - last.bodyRange.location); file.sections.append(last) }
+        if var last = file.sections.popLast() {
+            last.bodyRange.length = max(0, ns.length - last.bodyRange.location); file.sections.append(last)
+        }
         return file
     }
 
@@ -168,7 +192,8 @@ public enum INIStructure {
         let valueStart = NSMaxRange(separator)
         let valueText = nsBody.substring(from: valueStart)
         var valueRange = trimmedRange(of: valueText, at: location + valueStart)
-        let raw = (valueText as NSString).substring(with: NSRange(location: valueRange.location - location - valueStart, length: valueRange.length))
+        let raw = (valueText as NSString).substring(
+            with: NSRange(location: valueRange.location - location - valueStart, length: valueRange.length))
         if raw.count >= 2, let q = raw.first, q == "\"" || q == "'", raw.last == q {
             valueRange = NSRange(location: valueRange.location + 1, length: valueRange.length - 2)
         }
@@ -176,8 +201,9 @@ public enum INIStructure {
     }
 
     private static func continued(_ e: Entry, more: String, lineEnd: Int) -> Entry {
-        Entry(key: e.key, keyRange: e.keyRange, raw: (e.raw ?? "") + "\n" + more,
-              valueRange: NSRange(location: e.valueRange.location, length: lineEnd - e.valueRange.location))
+        Entry(
+            key: e.key, keyRange: e.keyRange, raw: (e.raw ?? "") + "\n" + more,
+            valueRange: NSRange(location: e.valueRange.location, length: lineEnd - e.valueRange.location))
     }
 
     /// The range of `s` without its surrounding whitespace, offset by `base`.

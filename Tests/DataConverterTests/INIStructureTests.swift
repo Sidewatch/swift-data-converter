@@ -13,24 +13,24 @@ import XCTest
 
 final class INIStructureTests: XCTestCase {
     let ini = """
-    ; Application settings
-    name = Inventory API
-    flag
+        ; Application settings
+        name = Inventory API
+        flag
 
-    [database]
-    host: db.internal
-    port = 5432
-    # a comment, not a value
-    timeout = 30.5
-    debug = Off
-    dsn = "postgres://db/app; not a comment"
-    motd = first line
-        second line
+        [database]
+        host: db.internal
+        port = 5432
+        # a comment, not a value
+        timeout = 30.5
+        debug = Off
+        dsn = "postgres://db/app; not a comment"
+        motd = first line
+            second line
 
-    [remote "origin"]
-    url = git@github.com:x/y.git
-    url = https://example.com/y.git
-    """
+        [remote "origin"]
+        url = git@github.com:x/y.git
+        url = https://example.com/y.git
+        """
     func pairs(_ v: StructuredValue?) -> [StructuredPair] { if case .mapping(let p)? = v { return p } else { return [] } }
     func raw(_ r: NSRange?) -> String? { r.map { (ini as NSString).substring(with: $0) } }
 
@@ -70,7 +70,9 @@ final class INIStructureTests: XCTestCase {
         let edit = try XCTUnwrap(INIStructure.replacement(in: ini, path: [.key("database"), .key("host")], key: false, with: "localhost"))
         XCTAssertTrue((ini as NSString).replacingCharacters(in: edit.range, with: edit.replacement).contains("host: localhost\n"))
         let flag = try XCTUnwrap(INIStructure.replacement(in: ini, path: [.key("flag")], key: false, with: "yes"))
-        XCTAssertTrue((ini as NSString).replacingCharacters(in: flag.range, with: flag.replacement).contains("flag = yes\n"), "a bare key gains its separator")
+        XCTAssertTrue(
+            (ini as NSString).replacingCharacters(in: flag.range, with: flag.replacement).contains("flag = yes\n"),
+            "a bare key gains its separator")
         let rename = try XCTUnwrap(INIStructure.replacement(in: ini, path: [.key("database")], key: true, with: "db"))
         XCTAssertTrue((ini as NSString).replacingCharacters(in: rename.range, with: rename.replacement).contains("[db]\n"))
         let multi = try XCTUnwrap(INIStructure.replacement(in: ini, path: [.key("database"), .key("motd")], key: false, with: "one\ntwo"))

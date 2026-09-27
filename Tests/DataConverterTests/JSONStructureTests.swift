@@ -91,8 +91,10 @@ final class JSONStructureTests: XCTestCase {
 
     /// Half a record shown as fact is worse than no record, so a broken document yields nil.
     func testMalformedDocumentsYieldNilRatherThanAPartialTree() {
-        for bad in [#"{"a": 1"#, #"{"a" 1}"#, #"{a: 1}"#, "[1, 2", #""unterminated"#,
-                    "{}{}", "", "   ", "tru", #"{"a": }"#, #"{"a": 1,}"#] {
+        for bad in [
+            #"{"a": 1"#, #"{"a" 1}"#, #"{a: 1}"#, "[1, 2", #""unterminated"#,
+            "{}{}", "", "   ", "tru", #"{"a": }"#, #"{"a": 1,}"#,
+        ] {
             XCTAssertNil(JSONStructure.value(of: bad), "should not parse: \(bad)")
         }
     }

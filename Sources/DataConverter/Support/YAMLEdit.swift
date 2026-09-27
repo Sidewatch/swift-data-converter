@@ -33,12 +33,19 @@ public enum YAMLEdit {
 
     /// Whether `t` reads as a YAML number (decimal, hex, octal, `.inf`, `.nan`).
     static func looksNumeric(_ t: String) -> Bool {
-        t.range(of: "^[-+]?(\\d[\\d_]*(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?$|^0x[0-9a-fA-F]+$|^0o[0-7]+$|^[-+]?\\.(inf|Inf|INF)$|^\\.(nan|NaN|NAN)$", options: .regularExpression) != nil
+        t.range(
+            of:
+                "^[-+]?(\\d[\\d_]*(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?$|^0x[0-9a-fA-F]+$|^0o[0-7]+$|^[-+]?\\.(inf|Inf|INF)$|^\\.(nan|NaN|NAN)$",
+            options: .regularExpression) != nil
     }
 
     /// Whether plain `t` would read back as a number, boolean (YAML 1.1 words too) or null.
     static func looksLikeAnotherType(_ t: String) -> Bool {
-        looksNumeric(t) || ["true", "false", "yes", "no", "on", "off", "null", "~", "True", "False", "Yes", "No", "On", "Off", "Null", "TRUE", "FALSE", "YES", "NO", "ON", "OFF", "NULL"].contains(t)
+        looksNumeric(t)
+            || [
+                "true", "false", "yes", "no", "on", "off", "null", "~", "True", "False", "Yes", "No", "On", "Off", "Null", "TRUE", "FALSE",
+                "YES", "NO", "ON", "OFF", "NULL",
+            ].contains(t)
     }
 
     /// Whether a plain scalar would read back as something else — or not at all.

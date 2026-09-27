@@ -24,7 +24,9 @@ final class PropertyListStructureTests: XCTestCase {
             let data = try PropertyListSerialization.data(fromPropertyList: object, format: format, options: 0)
             XCTAssertEqual(PropertyListStructure.isBinary(data.prefix(8)), format == .binary)
             let root = pairs(PropertyListStructure.value(of: data))
-            XCTAssertEqual(root.map(\.key), ["blob", "count", "dict", "list", "name", "off", "on", "ratio", "when"], "keys sorted — the reader keeps no order")
+            XCTAssertEqual(
+                root.map(\.key), ["blob", "count", "dict", "list", "name", "off", "on", "ratio", "when"],
+                "keys sorted — the reader keeps no order")
             XCTAssertEqual(root.first { $0.key == "count" }?.value, .integer(25))
             XCTAssertEqual(root.first { $0.key == "ratio" }?.value, .number(0.5))
             XCTAssertEqual(root.first { $0.key == "on" }?.value, .bool(true), "a boolean is not a number")

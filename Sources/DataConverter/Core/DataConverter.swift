@@ -23,16 +23,31 @@ public enum DataConverter {
     public static func convert(_ input: String, from: String, to: String) -> String {
         let value: Any?
         switch from {
-        case "CSV":  value = parseCSV(input)
-        default:     value = (try? JSONSerialization.jsonObject(with: Data(input.utf8), options: [.fragmentsAllowed]))
+        case "CSV": value = parseCSV(input)
+        default: value = (try? JSONSerialization.jsonObject(with: Data(input.utf8), options: [.fragmentsAllowed]))
         }
-        guard let value else { return "⚠︎ " + String(localized: "Couldn't parse the input as \(from).", bundle: .module, comment: "Data converter tool: the input could not be read; the value is a format name such as JSON or CSV.") }
+        guard let value else {
+            return "⚠︎ "
+                + String(
+                    localized: "Couldn't parse the input as \(from).", bundle: .module,
+                    comment: "Data converter tool: the input could not be read; the value is a format name such as JSON or CSV.")
+        }
         switch to {
         case "YAML": return yaml(value)
-        case "TOML": return (value as? [String: Any]).map { toml($0, path: []) } ?? "⚠︎ " + String(localized: "TOML needs a top-level object.", bundle: .module, comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.")
-        case "CSV":  return csv(value)
+        case "TOML":
+            return (value as? [String: Any]).map { toml($0, path: []) } ?? "⚠︎ "
+                + String(
+                    localized: "TOML needs a top-level object.", bundle: .module,
+                    comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.")
+        case "CSV": return csv(value)
         default:
-            guard let d = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed]) else { return "⚠︎ " + String(localized: "Not serializable.", bundle: .module, comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.") }
+            guard let d = try? JSONSerialization.data(withJSONObject: value, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed])
+            else {
+                return "⚠︎ "
+                    + String(
+                        localized: "Not serializable.", bundle: .module,
+                        comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.")
+            }
             return d.utf8String ?? ""
         }
     }
@@ -87,7 +102,8 @@ public enum DataConverter {
     private static func numberLexeme(_ n: NSNumber) -> String {
         let s = "\(n)"
         if CFNumberIsFloatType(n), n.doubleValue.isFinite,
-           !s.contains("."), !s.contains("e"), !s.contains("E") {
+            !s.contains("."), !s.contains("e"), !s.contains("E")
+        {
             return s + ".0"
         }
         return s
@@ -116,7 +132,9 @@ public enum DataConverter {
                 subs += "\n[\(p.map(tomlKey).joined(separator: "."))]\n" + toml(d, path: p)
             } else if let a = val as? [Any], !a.isEmpty, a.allSatisfy({ $0 is [String: Any] }) {
                 let p = path + [k]
-                for item in a { if let d = item as? [String: Any] { subs += "\n[[\(p.map(tomlKey).joined(separator: "."))]]\n" + toml(d, path: p) } }
+                for item in a {
+                    if let d = item as? [String: Any] { subs += "\n[[\(p.map(tomlKey).joined(separator: "."))]]\n" + toml(d, path: p) }
+                }
             } else {
                 scalars += "\(tomlKey(k)) = \(tomlValue(val))\n"
             }
@@ -157,8 +175,7 @@ public enum DataConverter {
             case "\t": out += "\\t"
             case "\r": out += "\\r"
             default:
-                if u.value < 0x20 { out += String(format: "\\u%04X", u.value) }
-                else { out.unicodeScalars.append(u) }
+                if u.value < 0x20 { out += String(format: "\\u%04X", u.value) } else { out.unicodeScalars.append(u) }
             }
         }
         return out
@@ -169,9 +186,19 @@ public enum DataConverter {
     /// Emit an array of objects as CSV: header = union of all keys (first-seen order, keys sorted
     /// per object), one row per object, missing keys as empty cells.
     private static func csv(_ v: Any) -> String {
-        guard let arr = v as? [Any] else { return "⚠︎ " + String(localized: "CSV output needs a JSON array of objects.", bundle: .module, comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.") }
+        guard let arr = v as? [Any] else {
+            return "⚠︎ "
+                + String(
+                    localized: "CSV output needs a JSON array of objects.", bundle: .module,
+                    comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.")
+        }
         let objs = arr.compactMap { $0 as? [String: Any] }
-        guard !objs.isEmpty, objs.count == arr.count else { return "⚠︎ " + String(localized: "CSV output needs an array of objects.", bundle: .module, comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.") }
+        guard !objs.isEmpty, objs.count == arr.count else {
+            return "⚠︎ "
+                + String(
+                    localized: "CSV output needs an array of objects.", bundle: .module,
+                    comment: "Data converter tool: message shown in the output pane when a conversion cannot be done.")
+        }
         var keys: [String] = []
         for o in objs { for k in o.keys.sorted() where !keys.contains(k) { keys.append(k) } }
         var rows = [keys.map(esc).joined(separator: ",")]
@@ -190,7 +217,8 @@ public enum DataConverter {
         }
         if isContainer(v) {
             guard let d = try? JSONSerialization.data(withJSONObject: v, options: [.sortedKeys]),
-                  let s = d.utf8String else { return "" }
+                let s = d.utf8String
+            else { return "" }
             return s
         }
         return "\(v)"
@@ -198,7 +226,8 @@ public enum DataConverter {
     /// RFC-4180 field quoting: wrap in quotes (doubling embedded quotes) only when the cell
     /// contains a comma, quote, or line break.
     private static func esc(_ s: String) -> String {
-        (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r")) ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s
+        (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r"))
+            ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s
     }
 
     /// Parse CSV text into one dictionary per data row, keyed by the header row.
@@ -213,7 +242,7 @@ public enum DataConverter {
         let records = csvRecords(text)
         guard records.count > 1 else { return [] }
         var headers: [String] = [], seen: [String: Int] = [:]
-        func addHeader(_ h: String) {             // de-dupe repeated headers: name, name_2, …
+        func addHeader(_ h: String) {  // de-dupe repeated headers: name, name_2, …
             let n = (seen[h] ?? 0) + 1
             seen[h] = n
             headers.append(n == 1 ? h : "\(h)_\(n)")

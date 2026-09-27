@@ -50,8 +50,10 @@ public enum CellOrder {
     ///
     /// Stable in both directions: ties keep arrival order, because a grid that shuffles ties on
     /// every click reads as broken. A row too short for `index` sorts as an empty cell.
-    public static func permutation(of rows: [[String]], by index: Int, ascending: Bool,
-                                   nullsFirst: Bool = false) -> [Int] {
+    public static func permutation(
+        of rows: [[String]], by index: Int, ascending: Bool,
+        nullsFirst: Bool = false
+    ) -> [Int] {
         func cell(_ row: [String]) -> String { index >= 0 && index < row.count ? row[index] : "" }
         return rows.indices.sorted { i, j in
             let r = compare(cell(rows[i]), cell(rows[j]), nullsFirst: nullsFirst)

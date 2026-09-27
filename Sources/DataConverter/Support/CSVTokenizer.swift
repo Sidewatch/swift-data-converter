@@ -61,7 +61,7 @@ struct CSVTokenizer {
         guard bytes[index] == ASCII.quote else { index += 1; return }
         flush()
         if next(is: ASCII.quote) {
-            field.append("\"")          // "" → one literal quote
+            field.append("\"")  // "" → one literal quote
             advance(by: 2)
         } else {
             inQuotes = false
@@ -76,7 +76,7 @@ struct CSVTokenizer {
         case ASCII.comma:
             endField(); advancePastDelimiter(by: 1)
         case ASCII.cr:
-            endRow(); advancePastDelimiter(by: next(is: ASCII.lf) ? 2 : 1)   // CRLF is one terminator; bare CR also ends a row
+            endRow(); advancePastDelimiter(by: next(is: ASCII.lf) ? 2 : 1)  // CRLF is one terminator; bare CR also ends a row
         case ASCII.lf:
             endRow(); advancePastDelimiter(by: 1)
         default:

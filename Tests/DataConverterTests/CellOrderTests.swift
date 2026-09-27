@@ -38,16 +38,19 @@ final class CellOrderTests: XCTestCase {
         XCTAssertEqual(CellOrder.compare("NULL", "a", nullsFirst: true), .orderedAscending)
         XCTAssertEqual(CellOrder.compare("a", "NULL", nullsFirst: true), .orderedDescending)
         XCTAssertEqual(CellOrder.compare("NULL", "NULL", nullsFirst: true), .orderedSame)
-        XCTAssertEqual(CellOrder.compare("NULL", "a", nullsFirst: false), "NULL".localizedStandardCompare("a"),
-                       "a CSV grid has no NULL: the word sorts among the Ns")
+        XCTAssertEqual(
+            CellOrder.compare("NULL", "a", nullsFirst: false), "NULL".localizedStandardCompare("a"),
+            "a CSV grid has no NULL: the word sorts among the Ns")
         XCTAssertEqual(CellOrder.compare("NULL", "-5", nullsFirst: true), .orderedAscending, "NULL is below every number too")
     }
 
     func testPermutationSortsByTheColumnAndKeepsTiesInArrivalOrder() {
         let rows = [["b", "2"], ["a", "10"], ["c", "2"], ["a", "9"]]
         XCTAssertEqual(CellOrder.permutation(of: rows, by: 0, ascending: true), [1, 3, 0, 2], "the two a-rows keep their arrival order")
-        XCTAssertEqual(CellOrder.permutation(of: rows, by: 1, ascending: true), [0, 2, 3, 1], "2, 2, 9, 10 — numeric, ties in arrival order")
-        XCTAssertEqual(CellOrder.permutation(of: rows, by: 1, ascending: false), [1, 3, 0, 2], "descending reverses unequal cells, not the ties")
+        XCTAssertEqual(
+            CellOrder.permutation(of: rows, by: 1, ascending: true), [0, 2, 3, 1], "2, 2, 9, 10 — numeric, ties in arrival order")
+        XCTAssertEqual(
+            CellOrder.permutation(of: rows, by: 1, ascending: false), [1, 3, 0, 2], "descending reverses unequal cells, not the ties")
     }
 
     func testAShortRowSortsAsAnEmptyCellAndAnOutOfRangeColumnChangesNothing() {

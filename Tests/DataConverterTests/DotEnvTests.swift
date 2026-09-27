@@ -16,20 +16,20 @@ final class DotEnvTests: XCTestCase {
 
     func testEntriesInFileOrderWithQuotesAndCommentsResolved() {
         let text = """
-        # database
-        DB_HOST=localhost
-        export DB_PORT = 5432
-        NAME="grove app" # trailing comment
-        MOTTO='it''s # not a comment'
-        PATH_LIKE=/usr/local # a comment
-        EMPTY=
-        HASH=#not-a-value
-        not a line
-        =novalue
-        MULTI="line one
-        line two"
-        ESC="tab\\there \\"quoted\\" \\$5"
-        """
+            # database
+            DB_HOST=localhost
+            export DB_PORT = 5432
+            NAME="grove app" # trailing comment
+            MOTTO='it''s # not a comment'
+            PATH_LIKE=/usr/local # a comment
+            EMPTY=
+            HASH=#not-a-value
+            not a line
+            =novalue
+            MULTI="line one
+            line two"
+            ESC="tab\\there \\"quoted\\" \\$5"
+            """
         let entries = DotEnv.parse(text)
         XCTAssertEqual(entries.map(\.key), ["DB_HOST", "DB_PORT", "NAME", "MOTTO", "PATH_LIKE", "EMPTY", "HASH", "MULTI", "ESC"])
         XCTAssertEqual(entries[0], DotEnv.Entry(key: "DB_HOST", value: "localhost", line: 2))
@@ -51,7 +51,9 @@ final class DotEnvTests: XCTestCase {
         let b = DotEnv.replacingValue(in: text, line: 3, with: "three words")
         XCTAssertEqual(b.components(separatedBy: "\n")[2], "B=\"three words\" # kept", "a quoted line stays quoted, its comment kept")
         let c = DotEnv.replacingValue(in: text, line: 4, with: "it's \"q\"")
-        XCTAssertEqual(c.components(separatedBy: "\n")[3], "C=\"it's \\\"q\\\"\"", "a single-quoted line moves to double quotes when the value needs escapes")
+        XCTAssertEqual(
+            c.components(separatedBy: "\n")[3], "C=\"it's \\\"q\\\"\"",
+            "a single-quoted line moves to double quotes when the value needs escapes")
         let d = DotEnv.replacingValue(in: text, line: 5, with: "has space")
         XCTAssertEqual(d.components(separatedBy: "\n")[4], "D=\"has space\"", "a bare value is quoted once it needs it")
         let e = DotEnv.replacingValue(in: text, line: 6, with: "x")
@@ -71,7 +73,10 @@ final class DotEnvTests: XCTestCase {
     }
 
     func testSecretsAreMaskedByKeyWordOrByCredentialsInAURL() {
-        for key in ["API_KEY", "SECRET", "DB_PASSWORD", "AUTH_TOKEN", "PRIVATE_KEY", "aws_secret_access_key", "JWT_SIGNATURE", "SENTRY_DSN", "CREDENTIALS"] {
+        for key in [
+            "API_KEY", "SECRET", "DB_PASSWORD", "AUTH_TOKEN", "PRIVATE_KEY", "aws_secret_access_key", "JWT_SIGNATURE", "SENTRY_DSN",
+            "CREDENTIALS",
+        ] {
             XCTAssertTrue(DotEnv.shouldMask(key: key, value: "x"), key)
         }
         for key in ["PORT", "NAME", "VERSION", "THEME", "DB_HOST", "KEYBOARD_LAYOUT", "MONKEY", "AUTHOR"] {
@@ -87,14 +92,17 @@ final class DotEnvTests: XCTestCase {
 
     func testReplacingKeyKeepsExportSpacingAndEverythingAfterTheSign() {
         let text = "NAME=grove\nexport  API_KEY = abc  # prod\n  PORT   =3000\n# a comment\n"
-        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 1, with: "TITLE"),
-                       "TITLE=grove\nexport  API_KEY = abc  # prod\n  PORT   =3000\n# a comment\n")
-        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 2, with: "TOKEN"),
-                       "NAME=grove\nexport  TOKEN = abc  # prod\n  PORT   =3000\n# a comment\n",
-                       "export, the spacing and the trailing comment all survive")
-        XCTAssertEqual(DotEnv.replacingKey(in: text, line: 3, with: "HTTP_PORT"),
-                       "NAME=grove\nexport  API_KEY = abc  # prod\n  HTTP_PORT   =3000\n# a comment\n",
-                       "the indent and the spaces before the sign are kept")
+        XCTAssertEqual(
+            DotEnv.replacingKey(in: text, line: 1, with: "TITLE"),
+            "TITLE=grove\nexport  API_KEY = abc  # prod\n  PORT   =3000\n# a comment\n")
+        XCTAssertEqual(
+            DotEnv.replacingKey(in: text, line: 2, with: "TOKEN"),
+            "NAME=grove\nexport  TOKEN = abc  # prod\n  PORT   =3000\n# a comment\n",
+            "export, the spacing and the trailing comment all survive")
+        XCTAssertEqual(
+            DotEnv.replacingKey(in: text, line: 3, with: "HTTP_PORT"),
+            "NAME=grove\nexport  API_KEY = abc  # prod\n  HTTP_PORT   =3000\n# a comment\n",
+            "the indent and the spaces before the sign are kept")
     }
 
     func testAKeyIsSanitisedAndAnImpossibleOneLeavesTheFileAlone() {

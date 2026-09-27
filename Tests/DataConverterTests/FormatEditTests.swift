@@ -31,6 +31,7 @@ final class FormatEditTests: XCTestCase {
         XCTAssertEqual(XMLEdit.encodedText("a < b & c > d"), "a &lt; b &amp; c &gt; d")
         XCTAssertEqual(XMLEdit.encodedAttribute("say \"hi\" & go"), "\"say &quot;hi&quot; &amp; go\"")
         XCTAssertEqual(XMLEdit.encodedAttributeName("@ width"), "width")
-        XCTAssertEqual(XMLEdit.decodedReferences("5 &lt;copies&gt; &#8212; &#x41; &amp;&publisher; &bogus"), "5 <copies> — A &&publisher; &bogus")
+        XCTAssertEqual(
+            XMLEdit.decodedReferences("5 &lt;copies&gt; &#8212; &#x41; &amp;&publisher; &bogus"), "5 <copies> — A &&publisher; &bogus")
     }
 }

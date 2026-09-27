@@ -36,7 +36,9 @@ public enum JSONEdit {
         _ = scanner.value(path: [])
         guard let hit = scanner.found else { return nil }
         func index(_ b: Int) -> String.Index { text.utf8.index(text.utf8.startIndex, offsetBy: b) }
-        return Site(key: hit.key.map { index($0.lowerBound)..<index($0.upperBound) }, value: index(hit.value.lowerBound)..<index(hit.value.upperBound))
+        return Site(
+            key: hit.key.map { index($0.lowerBound)..<index($0.upperBound) },
+            value: index(hit.value.lowerBound)..<index(hit.value.upperBound))
     }
 
     /// `typed` as the JSON token that replaces a value of `kind`.
