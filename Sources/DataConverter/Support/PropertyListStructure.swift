@@ -10,13 +10,10 @@
 
 import Foundation
 
-/// A property list as the structure a tree shows (25 Sep 2026): Foundation reads any format it
-/// knows — a BINARY plist (`bplist00`, what Xcode compiles `.strings` and `Info.plist` into, and
-/// what `defaults export` writes), the XML one, or OpenStep text — and the value comes back as
-/// `StructuredValue`: a dictionary's keys SORTED (the reader hands a dictionary; the file's order
-/// is not knowable through it — an XML plist read with its order and its edit sites is
-/// swift-code-highlighting's `PlistStructure`, next to the grammar), a date as ISO 8601, data as
-/// its byte count, booleans told from numbers. Nil when the bytes are not a property list.
+/// A property list, in any format Foundation reads (binary `bplist00`, XML, OpenStep text), as the
+/// structure a tree shows. Dictionary keys come back SORTED because Foundation's dictionary loses
+/// the file's order (swift-code-highlighting's `PlistStructure` reads an XML plist in order, with
+/// edit sites). Dates are ISO 8601, data is its byte count, booleans are told from numbers.
 public enum PropertyListStructure {
     /// Whether `head` (the file's first bytes) is a binary property list.
     public static func isBinary(_ head: Data) -> Bool { head.starts(with: Array("bplist".utf8)) }

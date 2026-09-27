@@ -10,15 +10,11 @@
 
 import Foundation
 
-/// JSON Lines (`.jsonl`, `.ndjson`): one complete JSON document per line, which is the shape every
-/// agent transcript, log shipper and dataset export writes.
+/// JSON Lines (`.jsonl`, `.ndjson`): one complete JSON document per line, the shape agent
+/// transcripts, log shippers and dataset exports write.
 ///
-/// It is NOT one JSON document, so a whole-file JSON reader sees a syntax error on line two and
-/// gives up — which is why these files show as plain text until something splits them. This splits
-/// them, keeping each record's range so an edit made in the tree can be written back to the one
-/// line it belongs to.
-///
-/// Blank lines are skipped, since a trailing newline is normal and an empty line is not a record.
+/// A whole-file JSON reader fails on line two, so this splits the records, keeping each one's
+/// range so a tree edit can be written back to its line. Blank lines are not records.
 public enum JSONLines {
     /// One record: its position in the file and the UTF-16 range of its text.
     public struct Record: Equatable, Sendable {
@@ -28,6 +24,7 @@ public enum JSONLines {
         public let line: Int
         /// The UTF-16 range of the record's text, trailing newline excluded.
         public let range: NSRange
+        /// Creates a record from its position and range.
         public init(index: Int, line: Int, range: NSRange) {
             self.index = index
             self.line = line

@@ -10,11 +10,12 @@
 
 import Foundation
 
-/// The writing half of a TOML cell edit (25 Sep 2026); the finder lives with the grammar
+/// The writing half of a TOML cell edit; the finder lives with the grammar
 /// (`TOMLStructure.site(in:path:)` in swift-code-highlighting). A string is a basic `"…"` string
 /// with escapes; a number stays a number only when the text is one; a key is bare when TOML
 /// allows it (`A-Za-z0-9_-`) and quoted otherwise.
 public enum TOMLEdit {
+    /// The kind of scalar a value was before the edit.
     public typealias ScalarKind = StructuredEdit.ScalarKind
 
     /// `typed` as the value that replaces one of `kind`.
@@ -32,6 +33,7 @@ public enum TOMLEdit {
         key.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil ? key : StructuredEdit.doubleQuoted(key)
     }
 
+    /// Whether `t` reads as a TOML number (underscores, hex/octal/binary, `inf`, `nan`).
     static func looksNumeric(_ t: String) -> Bool {
         t.range(of: "^[-+]?(\\d[\\d_]*)(\\.\\d[\\d_]*)?([eE][-+]?\\d+)?$|^0x[0-9A-Fa-f_]+$|^0o[0-7_]+$|^0b[01_]+$|^[-+]?(inf|nan)$", options: .regularExpression) != nil
     }

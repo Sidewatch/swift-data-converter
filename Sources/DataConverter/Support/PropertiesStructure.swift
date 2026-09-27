@@ -10,16 +10,15 @@
 
 import Foundation
 
-/// A `.properties` file as the structure a tree shows, and the site of any key or value in it
-/// (25 Sep 2026), by `java.util.Properties`' own rules: a logical line spans physical lines
-/// while it ends in an odd run of backslashes (the next line's leading whitespace dropped); `#`
-/// and `!` open a comment line; the key runs to the first unescaped `=`, `:` or whitespace, an
-/// optional separator follows, the rest is the value; `\t \n \f \r \\ \uXXXX` are escapes and
-/// `\X` is `X` for any other character (so `\=` and `\ ` are literal). A value is typed for the
-/// tree the way INI's is (`25`, `1.5`, `true`), else a string. Keys are listed in file order,
-/// duplicates included; a path finds the first.
+/// A `.properties` file as the structure a tree shows, and the site of any key or value in it,
+/// by `java.util.Properties`' rules: an odd run of trailing backslashes continues the line, `#`
+/// and `!` open comments, the key runs to the first unescaped `=`, `:` or whitespace, and `\X`
+/// is `X` beyond the standard escapes. Values are typed as INI's are; keys are listed in file
+/// order, duplicates included, and a path finds the first.
 public enum PropertiesStructure {
+    /// One step of a path into the tree.
     public typealias PathComponent = StructuredEdit.PathComponent
+    /// The key and value ranges of one member.
     public typealias EditSite = StructuredEdit.EditSite
 
     // MARK: - Reading
@@ -75,8 +74,10 @@ public enum PropertiesStructure {
 
     // MARK: - Parsing
 
+    /// One logical `key=value` line, unescaped, with the UTF-16 ranges an edit replaces.
     struct Entry { let key: String, keyRange: NSRange, value: String, valueRange: NSRange, separated: Bool }
 
+    /// Reads `text` into logical-line entries in file order.
     static func parse(_ text: String) -> [Entry] {
         let ns = text as NSString
         var entries: [Entry] = []

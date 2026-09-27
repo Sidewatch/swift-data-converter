@@ -10,17 +10,11 @@
 
 import Foundation
 
-/// JSON read into `StructuredValue`, **in the file's own key order**.
+/// JSON read into `StructuredValue`, **in the file's own key order** (`JSONSerialization`'s
+/// `[String: Any]` has none). Scalars keep the type JSON gives them.
 ///
-/// `JSONSerialization` hands back a `[String: Any]`, which has no order at all — so a tree built
-/// from it must either sort the keys or show them in whatever order the hash gave. A config file's
-/// order is the author's, and a record's order is the writer's, so this reads the text directly
-/// and keeps it. Scalars keep the type JSON gives them: an integer stays an integer, `1.5` a
-/// number, `true` a boolean, `null` null.
-///
-/// It is deliberately strict about structure and lenient about nothing: a document that does not
-/// parse returns nil rather than a partial tree, because half a record shown as fact is worse
-/// than no record.
+/// Strict: a document that does not parse returns nil rather than a partial tree, because half a
+/// record shown as fact is worse than no record.
 public enum JSONStructure {
     /// The document as ordered structure, or nil if it is not one JSON value.
     public static func value(of text: String) -> StructuredValue? {

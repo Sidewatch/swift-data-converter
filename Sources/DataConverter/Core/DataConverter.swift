@@ -17,15 +17,9 @@ import FoundationExtensions
 public enum DataConverter {
     /// Convert `input` from one text format to another, routing through a JSON value hub.
     ///
-    /// - Parameters:
-    ///   - input: The source text.
-    ///   - from: The input format — `"CSV"` uses the CSV parser; anything else is parsed as JSON.
-    ///   - to: The output format — `"YAML"`, `"TOML"`, or `"CSV"`; anything else emits pretty-printed,
-    ///     key-sorted JSON.
-    /// - Returns: The converted text, or a human-readable `"⚠︎ …"` message when the input can't be
-    ///   parsed or the value's shape doesn't fit the target (e.g. TOML needs a top-level object).
-    /// - Note: Never throws — errors come back as `"⚠︎"`-prefixed strings, so callers showing the
-    ///   result verbatim (a converter UI) need no error path.
+    /// `from` is `"CSV"` or else JSON; `to` is `"YAML"`, `"TOML"`, `"CSV"` or else pretty,
+    /// key-sorted JSON. Never throws: a parse failure or a shape the target cannot hold (TOML
+    /// needs a top-level object) comes back as a `"⚠︎ …"` message, so a UI can show it verbatim.
     public static func convert(_ input: String, from: String, to: String) -> String {
         let value: Any?
         switch from {

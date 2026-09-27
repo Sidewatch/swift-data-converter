@@ -10,13 +10,11 @@
 
 import Foundation
 
-/// The writing half of a YAML cell edit (25 Sep 2026). Finding WHERE the member sits needs the
-/// grammar and lives with it (`YAMLStructure.site(in:path:)` in swift-code-highlighting); what to
-/// write there is plain string rules and lives here beside `JSONEdit`: a scalar stays plain when
-/// YAML would read it back as the same text, and is double-quoted when it would not — a string
-/// that looks like a number or a bool, one that starts with an indicator, holds `: ` or ` #`, or
-/// spans lines.
+/// The writing half of a YAML cell edit; finding WHERE the member sits needs the grammar and
+/// lives with it (`YAMLStructure.site(in:path:)` in swift-code-highlighting). A scalar stays plain
+/// when YAML would read it back as the same text, and is double-quoted when it would not.
 public enum YAMLEdit {
+    /// The kind of scalar a value was before the edit.
     public typealias ScalarKind = StructuredEdit.ScalarKind
 
     /// `typed` as the scalar that replaces a value of `kind`.
@@ -33,10 +31,12 @@ public enum YAMLEdit {
     /// `key` as a mapping key.
     public static func encodedKey(_ key: String) -> String { needsQuotes(key) ? StructuredEdit.doubleQuoted(key) : key }
 
+    /// Whether `t` reads as a YAML number (decimal, hex, octal, `.inf`, `.nan`).
     static func looksNumeric(_ t: String) -> Bool {
         t.range(of: "^[-+]?(\\d[\\d_]*(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?$|^0x[0-9a-fA-F]+$|^0o[0-7]+$|^[-+]?\\.(inf|Inf|INF)$|^\\.(nan|NaN|NAN)$", options: .regularExpression) != nil
     }
 
+    /// Whether plain `t` would read back as a number, boolean (YAML 1.1 words too) or null.
     static func looksLikeAnotherType(_ t: String) -> Bool {
         looksNumeric(t) || ["true", "false", "yes", "no", "on", "off", "null", "~", "True", "False", "Yes", "No", "On", "Off", "Null", "TRUE", "FALSE", "YES", "NO", "ON", "OFF", "NULL"].contains(t)
     }

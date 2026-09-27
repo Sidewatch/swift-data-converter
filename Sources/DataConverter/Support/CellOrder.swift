@@ -45,19 +45,11 @@ public enum CellOrder {
         return a.localizedStandardCompare(b)
     }
 
-    /// `rows` ordered by column `index`, as a permutation of row indices.
+    /// `rows` ordered by column `index`, as a permutation of row indices, so a caller can reorder
+    /// a parallel array (a database grid's rowids) with the same moves.
     ///
-    /// Stable: equal cells keep the order they arrived in, because a grid that shuffles ties on
-    /// every click reads as broken. A row too short for `index` sorts as an empty cell. The
-    /// permutation lets a caller reorder a parallel array (a database grid's rowids) with
-    /// exactly the same moves.
-    ///
-    /// - Parameters:
-    ///   - rows: The grid's rows, each a list of cell texts.
-    ///   - index: The column to order by.
-    ///   - ascending: `false` reverses the order of unequal cells; ties still keep arrival order.
-    ///   - nullsFirst: Passed to ``compare(_:_:nullsFirst:)``.
-    /// - Returns: The row indices in display order.
+    /// Stable in both directions: ties keep arrival order, because a grid that shuffles ties on
+    /// every click reads as broken. A row too short for `index` sorts as an empty cell.
     public static func permutation(of rows: [[String]], by index: Int, ascending: Bool,
                                    nullsFirst: Bool = false) -> [Int] {
         func cell(_ row: [String]) -> String { index >= 0 && index < row.count ? row[index] : "" }

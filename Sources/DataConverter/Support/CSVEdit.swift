@@ -10,11 +10,10 @@
 
 import Foundation
 
-/// One cell of a CSV file changed in place — what an edited cell in a CSV table writes back
-/// (24 Sep 2026, David: "should it be possible to edit the values in the preview? we support it
-/// elsewhere"). The tokenizer's raw field ranges say exactly which bytes the old field occupied,
-/// so the rest of the file — its line endings, its quoting, its ragged rows — is untouched; the
-/// new value is quoted only when CSV needs it to be.
+/// One cell of a CSV file changed in place — what an edited cell in a CSV table writes back.
+/// The tokenizer's raw field ranges say exactly which bytes the old field occupied, so the rest
+/// of the file (line endings, quoting, ragged rows) is untouched; the new value is quoted only
+/// when CSV needs it to be.
 public enum CSVEdit {
     /// The bytes that would change in `text` if field `column` of `record` (both 0-based; the
     /// header is record 0) became `value`: the range of the old raw field and the text to put

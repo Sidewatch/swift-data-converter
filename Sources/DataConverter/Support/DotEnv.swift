@@ -21,10 +21,13 @@ public enum DotEnv {
 
     /// One `KEY=value` line.
     public struct Entry: Equatable, Sendable {
+        /// The variable's name, `export` dropped.
         public let key: String
+        /// The value with quotes removed and a double-quoted value's escapes resolved.
         public let value: String
         /// 1-based line of the key.
         public let line: Int
+        /// Creates an entry from its parts.
         public init(key: String, value: String, line: Int) { self.key = key; self.value = value; self.line = line }
     }
 
@@ -67,18 +70,10 @@ public enum DotEnv {
         return out
     }
 
-    /// `text` with the value on `line` (1-based, an ``Entry``'s) replaced by `value`, everything
-    /// else on the line kept: `export`, the key, the spacing around `=`, and a trailing comment.
-    /// A value that needs quoting — spaces, a `#`, a quote, a newline, or nothing at all when the
-    /// old one was quoted — goes in double quotes with `\\` and `"` escaped (and `\n` for a newline);
-    /// a plain value stays bare. The old line's quoting style is kept when it still fits.
-    ///
-    /// - Returns: The rewritten text, or `text` unchanged when `line` is not an entry.
-    /// One entry's NAME rewritten in place, keeping `export`, the spacing around the `=` and
-    /// everything after it (25 Sep 2026, David: "it's not possible to edit key in preview mode of
-    /// .env"). The new name is taken as typed with the characters a `.env` name cannot hold
-    /// removed — whitespace, `=` and `#` — and an empty result leaves the file alone, since a
-    /// nameless entry is not something a table should be able to write.
+    /// `text` with the NAME on `line` (1-based, an ``Entry``'s) rewritten in place, keeping
+    /// `export`, the spacing around the `=` and everything after it. The name is sanitised
+    /// (``sanitisedKey(_:)``); an empty result leaves the file alone, since a nameless entry is not
+    /// something a table should be able to write.
     public static func replacingKey(in text: String, line: Int, with key: String) -> String {
         var lines = text.components(separatedBy: "\n")
         guard line >= 1, line <= lines.count else { return text }
@@ -109,11 +104,15 @@ public enum DotEnv {
         return lines.joined(separator: "\n")
     }
 
-    /// `key` as a `.env` name: what the format cannot hold, removed.
+    /// `key` as a `.env` name: whitespace, `=` and `#`, which the format cannot hold, removed.
     public static func sanitisedKey(_ key: String) -> String {
         String(key.filter { !$0.isWhitespace && $0 != "=" && $0 != "#" })
     }
 
+    /// `text` with the value on `line` (1-based, an ``Entry``'s) replaced by `value`, keeping
+    /// `export`, the key, the spacing around `=` and a trailing comment. A value that needs quoting
+    /// (spaces, `#`, a quote, a newline) goes in escaped double quotes; a plain value stays bare, and
+    /// the old quoting style is kept when it still fits. Unchanged `text` when `line` is not an entry.
     public static func replacingValue(in text: String, line: Int, with value: String) -> String {
         var lines = text.components(separatedBy: "\n")
         guard line >= 1, line <= lines.count else { return text }

@@ -12,32 +12,17 @@ import Foundation
 
 /// Formats JSON by re-emitting its TOKENS, not by parsing and re-encoding it.
 ///
-/// The obvious implementation — `JSONSerialization.jsonObject` then `.prettyPrinted` — is wrong
-/// for a formatter, and wrong in a way that is easy to ship without noticing. Parsing yields a
-/// `[String: Any]`, which is an unordered dictionary: the key order the author chose is gone.
-/// Re-encoding then either emits an arbitrary order or, with `.sortedKeys`, alphabetises it. So
-/// formatting a config file would silently rearrange it, and the diff would be the whole file.
-///
-/// It also destroys number literals. `1.0` round-trips through `Double` and comes back `1`;
-/// `1e3` becomes `1000`; and an integer beyond `Double`'s exact range — an ID, a timestamp in
-/// nanoseconds — comes back subtly different. A formatter must not change values.
-///
-/// Working on tokens avoids both. Strings are copied byte for byte, numbers are copied as
-/// written, key order is whatever the file said, and only whitespace between tokens is decided
-/// here. The output is the input with different spacing, which is the whole contract.
+/// Parse-and-re-encode (`JSONSerialization` + `.prettyPrinted`) loses the author's key order and
+/// rewrites number literals (`1.0` → `1`, `1e3` → `1000`, large integers drift through `Double`).
+/// Here strings and numbers are copied as written, key order is the file's, and only whitespace
+/// between tokens is decided: the output is the input with different spacing.
 public enum JSONFormatter {
 
-    /// Re-indents `json` with `indent` per level, or returns nil when the input is not valid JSON.
+    /// Re-indents `json` with `indent` (default two spaces) per level, or returns nil when the
+    /// input is not valid JSON.
     ///
-    /// Validity is checked with `JSONSerialization` before formatting: the token scanner is
-    /// deliberately permissive (it does not know grammar, only structure), so on malformed input
-    /// it would happily produce neatly-indented nonsense. Refusing is better — a formatter that
-    /// "fixes" broken JSON into different broken JSON is worse than one that declines.
-    ///
-    /// - Parameters:
-    ///   - json: The JSON text.
-    ///   - indent: One level of indentation. Defaults to two spaces.
-    /// - Returns: The formatted text, or nil if `json` is not valid JSON.
+    /// Validity is checked first because the token scanner knows structure, not grammar, and would
+    /// turn malformed input into neatly indented nonsense.
     public static func format(_ json: String, indent: String = "  ") -> String? {
         guard isValid(json) else { return nil }
         return reindent(json, indent: indent)
@@ -61,11 +46,8 @@ public enum JSONFormatter {
 
     /// Whether `json` is valid per RFC 8259 — which is stricter than `JSONSerialization`.
     ///
-    /// `JSONSerialization` accepts trailing commas (`[1,2,]`, `{"a":1,}`) even though the spec
-    /// forbids them. Delegating validity to it wholesale would matter here: the scanner would
-    /// faithfully re-emit that comma on its own line, so formatting a file Apple's parser tolerates
-    /// would hand back output that other parsers reject. The alternative — silently dropping the
-    /// comma — is a content edit, and this formatter only moves whitespace. So it declines.
+    /// `JSONSerialization` accepts trailing commas (`[1,2,]`), which the scanner would re-emit into
+    /// output other parsers reject; dropping the comma would be a content edit, so it declines.
     public static func isValid(_ json: String) -> Bool {
         guard (try? JSONSerialization.jsonObject(with: Data(json.utf8), options: [.fragmentsAllowed])) != nil
         else { return false }
@@ -119,12 +101,9 @@ public enum JSONFormatter {
                 body(.colon, ":"); iterator = json.index(after: iterator)
             case ",":
                 body(.comma, ","); iterator = json.index(after: iterator)
-            // `isWhitespace` rather than matching " \t\n\r": Swift clusters CRLF into ONE
-            // Character, which equals neither "\r" nor "\n". Matching the four individually let
-            // every CRLF line ending fall through to the token branch below and be copied into
-            // the output verbatim, so Windows files came back with their old breaks embedded.
-            // Anything `isWhitespace` accepts here is legal JSON whitespace — validity is
-            // already established, so a stray non-breaking space cannot reach this point.
+            // Must be `isWhitespace`, not a match on " \t\n\r": Swift clusters CRLF into ONE
+            // Character equal to neither, so CRLF breaks would be copied into the output verbatim.
+            // Validity is already established, so anything `isWhitespace` accepts is JSON whitespace.
             case let c where c.isWhitespace:
                 var end = iterator
                 while end < json.endIndex, json[end].isWhitespace { end = json.index(after: end) }

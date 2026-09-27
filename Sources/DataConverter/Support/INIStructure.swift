@@ -10,18 +10,16 @@
 
 import Foundation
 
-/// An INI file (`.ini`, `.cfg`, `setup.cfg`, `tox.ini`, `php.ini`, git's config…) as the
-/// structure a tree shows, and the site of any key or value in it (25 Sep 2026). The rules are
-/// Python's `configparser` with git's separators: `[section]` opens a mapping (its name as
-/// written, `[remote "origin"]` included); `key = value` and `key: value` are its members, in
-/// file order, keys before the first section at the root; `;` and `#` open a comment line (no
-/// inline comments — a `#` in a URL is data); a line that starts with whitespace continues the
-/// value above it (`key = one\n  two` reads "one\ntwo"); a key with no separator is null. A
-/// value is TYPED for the tree — `25` an integer, `1.5` a number, `true` / `yes` / `on` and their
-/// opposites booleans (any case) — and everything else a string with one pair of surrounding
-/// quotes removed. Duplicate keys are all listed; a path finds the first.
+/// An INI file (`.ini`, `.cfg`, `tox.ini`, git's config…) as the structure a tree shows, and the
+/// site of any key or value in it. Python `configparser` rules with git's separators: `[section]`
+/// opens a mapping, `key = value` / `key: value` are members (root keys before the first
+/// section), `;`/`#` open whole-line comments only (a `#` in a URL is data), an indented line
+/// continues the value above, a key with no separator is null. Values are typed for the tree;
+/// duplicate keys are all listed and a path finds the first.
 public enum INIStructure {
+    /// One step of a path into the tree.
     public typealias PathComponent = StructuredEdit.PathComponent
+    /// The key and value ranges of one member.
     public typealias EditSite = StructuredEdit.EditSite
 
     // MARK: - Reading
@@ -99,6 +97,7 @@ public enum INIStructure {
 
     // MARK: - Parsing
 
+    /// One `key = value` line (continuations joined), with the ranges an edit replaces.
     struct Entry {
         let key: String, keyRange: NSRange
         let raw: String?          // nil: no separator on the line
@@ -106,9 +105,12 @@ public enum INIStructure {
         var typed: StructuredValue { raw.map(INIStructure.typed) ?? .null }
         var site: EditSite { EditSite(key: keyRange, value: valueRange) }
     }
+    /// A `[section]`: its name's range inside the brackets and its body's range.
     struct Section { let name: String, nameRange: NSRange; var entries: [Entry]; var bodyRange: NSRange }
+    /// The whole file: root keys before any section, then the sections in order.
     struct File { var globals: [Entry] = []; var sections: [Section] = [] }
 
+    /// Reads `text` into entries and sections with their UTF-16 ranges.
     static func parse(_ text: String) -> File {
         let ns = text as NSString
         var file = File()

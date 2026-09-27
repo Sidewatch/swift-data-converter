@@ -180,12 +180,10 @@ final class JSONFormatterTests: XCTestCase {
         XCTAssertEqual(JSONFormatter.format(JSONFormatter.minify(pretty)!), pretty)
     }
 
-    // MARK: - The file this feature was asked for
+    // MARK: - A real theme file
 
-    /// A Sidewatch theme is the case that prompted this: Duplicate & Edit wrote unformatted JSON.
-    /// Theme files group related keys (all the ANSI colours together, then the UI colours), and
-    /// alphabetising would scatter that grouping — which is precisely what a parse/re-encode
-    /// formatter does and why this one works on tokens.
+    /// Sidewatch theme files group related keys (all the ANSI colours together, then the UI
+    /// colours); a parse/re-encode formatter would alphabetise and scatter that grouping.
     func testThemeFileKeepsItsPropertyGrouping() {
         // `##"…"##`: the palette values contain `"#`, which would close a single-hash raw string.
         let theme = ##"{"name":"Test","isDark":true,"background":"#1e1e1e","foreground":"#d4d4d4","ansiBlack":"#000000","ansiRed":"#ff0000"}"##

@@ -10,20 +10,23 @@
 
 import Foundation
 
-/// One key or value of a JSON file edited in place — what a cell edited in a JSON tree writes back
-/// (25 Sep 2026, David: "the keys/values should be editable by double clicking"). `site(in:path:)`
-/// scans the text once, tracking the path, and answers the raw token ranges of the member at
-/// `path`: its value (quotes included for a string) and, inside an object, its key. The rest of
-/// the file — its formatting, its other members — is untouched, since the caller replaces only
-/// that range. `encodedValue` writes a typed replacement the way the value's kind wants it.
+/// One key or value of a JSON file edited in place — what a cell edited in a JSON tree writes
+/// back. `site(in:path:)` scans the text once and answers the raw token ranges of the member at
+/// `path`, so the caller replaces only that range and the rest of the file keeps its formatting.
+/// `encodedValue` writes a typed replacement the way the value's kind wants it.
 public enum JSONEdit {
+    /// One step of a path into the tree.
     public typealias PathComponent = StructuredEdit.PathComponent
+    /// The kind of scalar a value was before the edit.
     public typealias ScalarKind = StructuredEdit.ScalarKind
 
     /// The raw token ranges of a member: its value, and its key when it is an object member.
     public struct Site: Equatable, Sendable {
+        /// The key token, quotes included; nil for an array element.
         public let key: Range<String.Index>?
+        /// The value token, quotes included for a string.
         public let value: Range<String.Index>
+        /// Creates a site from its ranges.
         public init(key: Range<String.Index>?, value: Range<String.Index>) { self.key = key; self.value = value }
     }
 
@@ -53,6 +56,7 @@ public enum JSONEdit {
     /// A JSON string token: quoted, with the escapes JSON needs.
     public static func jsonString(_ s: String) -> String { StructuredEdit.doubleQuoted(s) }
 
+    /// Whether `t` is a number token as RFC 8259 spells one.
     static func isNumber(_ t: String) -> Bool {
         t.range(of: "^-?(0|[1-9]\\d*)(\\.\\d+)?([eE][+-]?\\d+)?$", options: .regularExpression) != nil
     }

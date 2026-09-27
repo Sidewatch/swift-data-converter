@@ -11,16 +11,11 @@
 import XCTest
 @testable import DataConverter
 
-/// Randomised checks on ``JSONFormatter``.
+/// Randomised checks on ``JSONFormatter``: the invariants against a few thousand generated
+/// documents, covering awkward shapes nobody would think to write by hand.
 ///
-/// The hand-written tests pin cases someone thought of. These pin the invariants themselves
-/// against a few thousand generated documents, which is how the awkward shapes — an empty object
-/// as the last element, a string full of structural characters, nesting deeper than anyone would
-/// write by hand — get covered without having to imagine each one.
-///
-/// Seeded deliberately: a formatter that fails once in a thousand runs and passes on re-run is
-/// worse than one that fails every time, because CI teaches you to ignore it. Same corpus every
-/// run, and a failure reproduces from the printed input.
+/// Seeded deliberately: a flaky failure teaches CI to be ignored. Same corpus every run, and a
+/// failure reproduces from the printed input.
 final class JSONFormatterPropertyTests: XCTestCase {
 
     /// The invariant that matters most, and the tightest one available: minifying both sides

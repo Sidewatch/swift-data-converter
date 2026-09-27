@@ -10,13 +10,12 @@
 
 import Foundation
 
-/// The writing half of a property-list tree edit (25 Sep 2026); the finder lives with the
-/// grammar (`PlistStructure.site(in:path:)` in swift-code-highlighting). A string's content is
-/// XML-escaped; a number stays bare only when the text is one (the tree reads a non-number in
-/// an `<integer>` as a string, so the file stays readable either way); a boolean's site is its
-/// whole element, so `true` / `false` write `<true/>` / `<false/>` and any other text a
-/// `<string>` element in its place.
+/// The writing half of a property-list tree edit; the finder lives with the grammar
+/// (`PlistStructure.site(in:path:)` in swift-code-highlighting). A string's content is
+/// XML-escaped; a number stays bare only when the text is one; a boolean's site is its whole
+/// element, so `true`/`false` write `<true/>`/`<false/>` and any other text a `<string>` element.
 public enum PlistEdit {
+    /// The kind of scalar a value was before the edit.
     public typealias ScalarKind = StructuredEdit.ScalarKind
 
     /// `typed` as the content (or element) that replaces one of `kind`.

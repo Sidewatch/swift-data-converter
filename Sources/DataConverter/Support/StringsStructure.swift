@@ -11,13 +11,15 @@
 import Foundation
 
 /// A `.strings` file — `"key" = "value";` with `/* */` and `//` comments — as the structure a
-/// tree shows, and the site of any key or value in it (25 Sep 2026). Keys may be bare
+/// tree shows, and the site of any key or value in it. Keys may be bare
 /// identifiers (the old-style plist syntax); `"key";` alone means the value is the key;
 /// escapes are `\" \\ \n \t \r \0` and `\UXXXX` / `\uXXXX`. Every value is a string. A compiled
 /// `.strings` (a binary plist, what Xcode ships in a bundle) is not text — read it with
 /// `PropertyListStructure`.
 public enum StringsStructure {
+    /// One step of a path into the tree.
     public typealias PathComponent = StructuredEdit.PathComponent
+    /// The key and value ranges of one member.
     public typealias EditSite = StructuredEdit.EditSite
 
     // MARK: - Reading
@@ -63,8 +65,10 @@ public enum StringsStructure {
 
     // MARK: - Parsing
 
+    /// One entry, unescaped; `valueRange` is nil for `"key";`, whose value is the key.
     struct Entry { let key: String, keyRange: NSRange, value: String, valueRange: NSRange? }
 
+    /// Reads `text` into entries in file order, skipping comments.
     static func parse(_ text: String) -> [Entry] {
         let chars = Array(text.utf16)
         var entries: [Entry] = []
