@@ -1,6 +1,6 @@
 # Swift Data Converter
 
-A dependency-free data-format converter that routes everything through a JSON value hub — **input** JSON or CSV, **output** pretty JSON, YAML, TOML, or CSV. Pure Foundation, zero dependencies; includes a robust, quote-aware CSV tokenizer that is reusable on its own.
+A data-format converter that routes everything through a JSON value hub — **input** JSON or CSV, **output** pretty JSON, YAML, TOML, or CSV. Pure Foundation, zero dependencies; includes a robust, quote-aware CSV tokenizer that is reusable on its own.
 
 ## Features
 
@@ -14,7 +14,7 @@ A dependency-free data-format converter that routes everything through a JSON va
 - 🌳 **Structure readers** — `INIStructure`, `PropertiesStructure` and `StringsStructure` read an INI / `.cfg` file (sections, `=` and `:`, continuation lines, typed values), a Java `.properties` file (the JDK's rules: three separators, `\` continuations, `\uXXXX` and `\X` escapes) and a `.strings` file (quoted or bare keys, both comment kinds, `"key";` shorthand) as `StructuredValue` — mappings in FILE order, scalars typed — and answer `site(in:path:)` (where a key and its value sit) and `replacement(in:path:key:with:)` (the one edit a typed key or value means, a bare key gaining its separator); `PropertyListStructure.value(of:)` reads any property list Foundation can — binary, XML, OpenStep — with keys sorted; `TOMLEdit`, `XMLEdit` and `PlistEdit` are the encoders for the formats whose finders live with the grammars in swift-code-kit's CodeHighlighting
 - ✏️ **CSV cells edited in place** — `CSVEdit.replacingField(in:record:column:with:)` rewrites one field of a CSV file and nothing else (line endings, quoting and ragged rows kept; the new value quoted only when CSV needs it), and `CSVEdit.fieldReplacement(in:record:column:with:)` hands back the old field's range and the replacement so a text view can apply it as one undoable edit; the tokenizer's `fieldRanges(in:)` is what finds the field
 - ⚠️ **Friendly errors, no throws** — unparseable input or shape mismatches come back as `"⚠︎ …"` messages (e.g. "TOML needs a top-level object"), so a converter UI can show the result verbatim
-- 🪶 **Zero dependencies** — Foundation only (swift-code-kit's CodeHighlighting depends on this package for the value model, never the other way)
+- 🪶 **Small** — Foundation plus swift-foundation-extensions (swift-code-kit's CodeHighlighting depends on this package for the value model, never the other way)
 - 🍎 **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS
 
 ## Requirements
