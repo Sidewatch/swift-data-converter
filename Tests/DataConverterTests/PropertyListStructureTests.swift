@@ -5,6 +5,7 @@
 //  A property list's bytes as structure, in every format Foundation reads.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

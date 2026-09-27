@@ -5,6 +5,7 @@
 //  JSON read as ordered structure: the file's key order kept, scalars keeping their type.
 //
 //  Created by David Sherlock on 9/26/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

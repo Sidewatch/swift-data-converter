@@ -1,10 +1,11 @@
 //
 //  JSONFormatter.swift
-//  SwiftDataConverter
+//  DataConverter
 //
 //  Re-indents JSON without rewriting it.
 //
 //  Created by David Sherlock on 8/6/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

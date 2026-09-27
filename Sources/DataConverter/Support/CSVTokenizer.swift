@@ -5,6 +5,7 @@
 //  Tokenizes CSV text into records of raw fields, header row included.
 //
 //  Created by David Sherlock on 9/5/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

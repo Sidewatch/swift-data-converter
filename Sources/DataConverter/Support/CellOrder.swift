@@ -6,6 +6,7 @@
 //  otherwise, with SQL NULL first when a grid asks for it.
 //
 //  Created by David Sherlock on 9/17/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

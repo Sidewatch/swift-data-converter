@@ -1,10 +1,11 @@
 //
 //  DataConverter.swift
-//  SwiftDataConverter
+//  DataConverter
 //
 //  Dependency-free data-format conversion through a JSON value hub.
 //
 //  Created by David Sherlock on 7/9/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

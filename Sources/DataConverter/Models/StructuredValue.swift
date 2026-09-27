@@ -5,6 +5,7 @@
 //  One ordered value model for every document a tree can show: YAML, TOML, XML, JSON, plists.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

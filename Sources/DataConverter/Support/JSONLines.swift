@@ -5,6 +5,7 @@
 //  JSON Lines: one JSON document per line, read as an ordered sequence of records.
 //
 //  Created by David Sherlock on 9/26/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

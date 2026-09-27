@@ -6,6 +6,7 @@
 //  rule for which of them a screen should not show.
 //
 //  Created by David Sherlock on 9/22/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

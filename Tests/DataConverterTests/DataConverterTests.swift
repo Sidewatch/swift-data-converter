@@ -1,11 +1,12 @@
 //
 //  DataConverterTests.swift
-//  Tests for SwiftDataConverter
+//  DataConverterTests
 //
 //  Tests for `DataConverter.convert` between JSON, YAML, TOML and the other formats it
 //  supports, including malformed input.
 //
 //  Created by David Sherlock on 7/9/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

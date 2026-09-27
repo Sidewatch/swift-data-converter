@@ -5,6 +5,7 @@
 //  The TOML and XML encoders: a typed replacement keeps its kind and its escapes.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

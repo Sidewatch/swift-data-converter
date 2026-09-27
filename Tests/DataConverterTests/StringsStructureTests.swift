@@ -5,6 +5,7 @@
 //  A .strings file as its entries, and one key or value rewritten in place.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

@@ -5,6 +5,7 @@
 //  JSON Lines split into records, each keeping the range its edit writes back to.
 //
 //  Created by David Sherlock on 9/26/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

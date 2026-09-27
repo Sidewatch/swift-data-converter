@@ -5,6 +5,7 @@
 //  The vocabulary every tree editor shares: a path into a document, a scalar's kind, an edit site, quoting.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

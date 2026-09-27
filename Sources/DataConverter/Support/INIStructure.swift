@@ -5,6 +5,7 @@
 //  An INI file as ordered structure — sections of typed keys — and where each key and value sits.
 //
 //  Created by David Sherlock on 9/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation
