@@ -13,7 +13,9 @@ import Foundation
 /// One key or value of a JSON file edited in place — what a cell edited in a JSON tree writes
 /// back. `site(in:path:)` scans the text once and answers the raw token ranges of the member at
 /// `path`, so the caller replaces only that range and the rest of the file keeps its formatting.
-/// `encodedValue` writes a typed replacement the way the value's kind wants it.
+/// `encodedValue` writes a typed replacement the way the value's kind wants it. The scanner also
+/// reads JSONC and JSON5 (`tsconfig.json`, `devcontainer.json`, `.json5`): comments are skipped,
+/// a trailing comma closes its container, and a key may be bare or single-quoted.
 public enum JSONEdit {
     /// One step of a path into the tree.
     public typealias PathComponent = StructuredEdit.PathComponent
@@ -74,7 +76,22 @@ public enum JSONEdit {
 
         init(bytes: [UInt8], target: [PathComponent]) { self.bytes = bytes; self.target = target }
 
-        mutating func skipSpace() { while pos < bytes.count, [0x20, 0x09, 0x0A, 0x0D].contains(bytes[pos]) { pos += 1 } }
+        /// Skips whitespace and comments, both `// line` and `/* block */`.
+        mutating func skipSpace() {
+            while pos < bytes.count {
+                if [0x20, 0x09, 0x0A, 0x0D].contains(bytes[pos]) {
+                    pos += 1
+                } else if bytes[pos] == UInt8(ascii: "/"), pos + 1 < bytes.count, bytes[pos + 1] == UInt8(ascii: "/") {
+                    while pos < bytes.count, bytes[pos] != 0x0A { pos += 1 }
+                } else if bytes[pos] == UInt8(ascii: "/"), pos + 1 < bytes.count, bytes[pos + 1] == UInt8(ascii: "*") {
+                    pos += 2
+                    while pos + 1 < bytes.count, !(bytes[pos] == UInt8(ascii: "*") && bytes[pos + 1] == UInt8(ascii: "/")) { pos += 1 }
+                    pos = min(pos + 2, bytes.count)
+                } else {
+                    return
+                }
+            }
+        }
 
         /// Parses one value at `pos`; returns its byte range, or nil on malformed input.
         mutating func value(path: [PathComponent]) -> Range<Int>? {
@@ -84,7 +101,7 @@ public enum JSONEdit {
             switch bytes[pos] {
             case UInt8(ascii: "{"): return object(path: path, start: start)
             case UInt8(ascii: "["): return array(path: path, start: start)
-            case UInt8(ascii: "\""): return string()
+            case UInt8(ascii: "\""), UInt8(ascii: "'"): return string()
             case UInt8(ascii: "t"): return literal("true")
             case UInt8(ascii: "f"): return literal("false")
             case UInt8(ascii: "n"): return literal("null")
@@ -98,7 +115,7 @@ public enum JSONEdit {
                 skipSpace()
                 guard pos < bytes.count else { return nil }
                 if bytes[pos] == UInt8(ascii: "}") { pos += 1; return start..<pos }
-                guard bytes[pos] == UInt8(ascii: "\""), let keyRange = string() else { return nil }
+                guard let keyRange = key() else { return nil }
                 let key = decodedString(keyRange)
                 skipSpace()
                 guard pos < bytes.count, bytes[pos] == UInt8(ascii: ":") else { return nil }
@@ -133,15 +150,29 @@ public enum JSONEdit {
             }
         }
 
-        /// A string token at `pos` (the opening quote), quotes included.
+        /// A key token: a string in either quote, or a JSON5 bare identifier.
+        mutating func key() -> Range<Int>? {
+            if bytes[pos] == UInt8(ascii: "\"") || bytes[pos] == UInt8(ascii: "'") { return string() }
+            let start = pos
+            while pos < bytes.count, Self.isIdentifierByte(bytes[pos]) { pos += 1 }
+            return pos > start ? start..<pos : nil
+        }
+
+        /// A letter, digit, `_`, `$` or any byte of a non-ASCII character: what a bare key is made of.
+        static func isIdentifierByte(_ b: UInt8) -> Bool {
+            (b >= 0x30 && b <= 0x39) || (b >= 0x41 && b <= 0x5A) || (b >= 0x61 && b <= 0x7A) || b == 0x5F || b == 0x24 || b >= 0x80
+        }
+
+        /// A string token at `pos` (the opening quote, double or single), quotes included.
         mutating func string() -> Range<Int>? {
             let start = pos
+            let quote = bytes[pos]
             pos += 1
             while pos < bytes.count {
                 let b = bytes[pos]
                 if b == UInt8(ascii: "\\") { pos += 2; continue }
                 pos += 1
-                if b == UInt8(ascii: "\"") { return start..<pos }
+                if b == quote { return start..<pos }
             }
             return nil
         }
@@ -154,15 +185,25 @@ public enum JSONEdit {
             return start..<pos
         }
 
+        /// A number token; JSON5's hex, `Infinity` and `NaN` are letters, so letters are taken too.
         mutating func number() -> Range<Int>? {
             let start = pos
-            while pos < bytes.count, "+-0123456789.eE".utf8.contains(bytes[pos]) { pos += 1 }
+            while pos < bytes.count, Self.isIdentifierByte(bytes[pos]) || "+-.".utf8.contains(bytes[pos]) { pos += 1 }
             return pos > start ? start..<pos : nil
         }
 
-        /// The key a token spells, its escapes undone.
+        /// The key a token spells, its escapes undone. A bare key spells itself; a single-quoted
+        /// one is read as the double-quoted string it means.
         func decodedString(_ r: Range<Int>) -> String {
-            let raw = Data(bytes[r])
+            guard bytes[r.lowerBound] == UInt8(ascii: "\"") || bytes[r.lowerBound] == UInt8(ascii: "'") else {
+                return String(decoding: bytes[r], as: UTF8.self)
+            }
+            var raw = Data(bytes[r])
+            if bytes[r.lowerBound] == UInt8(ascii: "'") {
+                let inner = String(decoding: bytes[(r.lowerBound + 1)..<(r.upperBound - 1)], as: UTF8.self)
+                raw = Data(
+                    ("\"" + inner.replacingOccurrences(of: "\\'", with: "'").replacingOccurrences(of: "\"", with: "\\\"") + "\"").utf8)
+            }
             if let s = try? JSONSerialization.jsonObject(with: raw, options: .fragmentsAllowed) as? String { return s }
             return String(decoding: bytes[(r.lowerBound + 1)..<(r.upperBound - 1)], as: UTF8.self)
         }

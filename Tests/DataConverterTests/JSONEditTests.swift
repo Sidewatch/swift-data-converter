@@ -71,4 +71,48 @@ final class JSONEditTests: XCTestCase {
         XCTAssertEqual(JSONEdit.jsonString("a \"q\" \\ \n\ttab"), "\"a \\\"q\\\" \\\\ \\n\\ttab\"")
         XCTAssertEqual(JSONEdit.encodedKey("na\"me"), "\"na\\\"me\"")
     }
+
+    // JSONC (`tsconfig.json`, `devcontainer.json`) and JSON5: comments, trailing commas, bare and
+    // single-quoted keys. Strict JSON's scanner stops at the first comment and finds nothing.
+    let jsonc = """
+        // Build settings
+        {
+          /* the compiler */
+          "compilerOptions": {
+            "target": "es2022", // newest the runtime has
+            "strict": true,
+          },
+          include: ['src/**/*'],
+          'out dir': 'dist',
+          hex: 0xFF,
+          ratio: +Infinity,
+        }
+        """
+
+    func testJSONCCommentsAndTrailingCommasAreSkipped() throws {
+        let target = try XCTUnwrap(JSONEdit.site(in: jsonc, path: [.key("compilerOptions"), .key("target")]))
+        XCTAssertEqual(String(jsonc[target.value]), "\"es2022\"")
+        let strict = try XCTUnwrap(JSONEdit.site(in: jsonc, path: [.key("compilerOptions"), .key("strict")]))
+        XCTAssertEqual(String(jsonc[strict.value]), "true", "a trailing comma closes the object")
+        XCTAssertNotNil(JSONEdit.site(in: jsonc, path: [.key("ratio")]), "members after the trailing-comma object are reached")
+    }
+
+    func testJSON5BareAndSingleQuotedKeysAndValues() throws {
+        let include = try XCTUnwrap(JSONEdit.site(in: jsonc, path: [.key("include"), .index(0)]))
+        XCTAssertEqual(String(jsonc[include.value]), "'src/**/*'")
+        let includeKey = try XCTUnwrap(JSONEdit.site(in: jsonc, path: [.key("include")])?.key)
+        XCTAssertEqual(String(jsonc[includeKey]), "include")
+        let outDir = try XCTUnwrap(JSONEdit.site(in: jsonc, path: [.key("out dir")]))
+        XCTAssertEqual(outDir.key.map { String(jsonc[$0]) }, "'out dir'")
+        XCTAssertEqual(String(jsonc[outDir.value]), "'dist'")
+        XCTAssertEqual(JSONEdit.site(in: jsonc, path: [.key("hex")]).map { String(jsonc[$0.value]) }, "0xFF")
+        XCTAssertEqual(JSONEdit.site(in: jsonc, path: [.key("ratio")]).map { String(jsonc[$0.value]) }, "+Infinity")
+    }
+
+    func testAnEditInAJSONCFileKeepsItsComments() throws {
+        let site = try XCTUnwrap(JSONEdit.site(in: jsonc, path: [.key("compilerOptions"), .key("target")]))
+        var out = jsonc; out.replaceSubrange(site.value, with: JSONEdit.encodedValue("es2024", kind: .string))
+        XCTAssertEqual(out, jsonc.replacingOccurrences(of: "\"es2022\"", with: "\"es2024\""))
+        XCTAssertNil(JSONEdit.site(in: "{ /* never closed", path: [.key("a")]))
+    }
 }
