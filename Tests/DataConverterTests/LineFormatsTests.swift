@@ -174,4 +174,20 @@ final class LineFormatsTests: XCTestCase {
         let md = try XCTUnwrap(JupyterNotebook.markdown(from: data))
         XCTAssertTrue(md.contains("```"))
     }
+
+    /// An option a host block does not have yet is added under its last option, indented to match;
+    /// clearing one removes its line; the Host line itself is never removed.
+    func testSSHOptionsAreAddedAndRemoved() {
+        let text = "Host build\n    HostName build.example.com\n    User deploy\n\nHost *\n  ServerAliveInterval 30\n"
+        let blocks = SSHConfig.parse(text)
+        let added = SSHConfig.addingOption(in: text, to: blocks[0], keyword: "Port", value: "2222")
+        XCTAssertEqual(
+            added, "Host build\n    HostName build.example.com\n    User deploy\n    Port 2222\n\nHost *\n  ServerAliveInterval 30\n")
+        let second = SSHConfig.addingOption(in: text, to: blocks[1], keyword: "User", value: "ops")
+        XCTAssertTrue(second.contains("  ServerAliveInterval 30\n  User ops\n"), second)
+        XCTAssertEqual(SSHConfig.addingOption(in: text, to: blocks[0], keyword: "Port", value: "  "), text)
+        let removed = SSHConfig.removingOption(in: text, line: 3)
+        XCTAssertEqual(removed, "Host build\n    HostName build.example.com\n\nHost *\n  ServerAliveInterval 30\n")
+        XCTAssertEqual(SSHConfig.removingOption(in: text, line: 1), text, "the Host line stays")
+    }
 }

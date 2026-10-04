@@ -81,6 +81,36 @@ public enum SSHConfig {
         return LineText.replacingLine(line, in: text, with: indent + keyword + separator + (quoted ? "\"\(clean)\"" : clean))
     }
 
+    /// `text` with `keyword value` added to `block` as its last option, indented like the block's
+    /// other options (four spaces when it has none); unchanged for an empty value or a block with no
+    /// line to add after.
+    public static func addingOption(in text: String, to block: Block, keyword: String, value: String) -> String {
+        let clean = value.trimmingCharacters(in: .whitespaces)
+        let anchor = block.options.last?.line ?? block.line
+        var lines = LineText.lines(text)
+        guard !clean.isEmpty, !clean.contains("\n"), anchor >= 1, anchor <= lines.count else { return text }
+        let indent: String
+        if let first = block.options.first, first.line <= lines.count {
+            indent = String(LineText.clean(lines[first.line - 1]).prefix { $0 == " " || $0 == "\t" })
+        } else {
+            indent = "    "
+        }
+        let crlf = lines[anchor - 1].hasSuffix("\r") ? "\r" : ""
+        let shown = clean.contains(" ") ? "\"\(clean)\"" : clean
+        lines.insert(indent + keyword + " " + shown + crlf, at: anchor)
+        return lines.joined(separator: "\n")
+    }
+
+    /// `text` without line `line` (an option cleared in the table); unchanged when it is not an option.
+    public static func removingOption(in text: String, line: Int) -> String {
+        var lines = LineText.lines(text)
+        guard line >= 1, line <= lines.count, let (keyword, _) = keywordValue(LineText.clean(lines[line - 1])),
+            !["host", "match"].contains(keyword.lowercased())
+        else { return text }
+        lines.remove(at: line - 1)
+        return lines.joined(separator: "\n")
+    }
+
     /// A line's keyword and value, or nil for a blank or comment line.
     static func keywordValue(_ line: String) -> (String, String)? {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
