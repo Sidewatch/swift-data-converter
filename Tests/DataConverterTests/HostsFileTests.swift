@@ -81,4 +81,24 @@ final class HostsFileTests: XCTestCase {
         XCTAssertTrue(entries.contains { $0.address == "0x7f.0.0.1" })
         XCTAssertFalse(entries.contains { $0.address == "Unicode" || $0.address == "Double-hash" })
     }
+
+    /// The tokenizer scans bytes; a line with accented and CJK text and mixed tabs still splits on
+    /// whitespace alone, and every range maps back to its token.
+    func testTokensSplitNonASCIILinesByWhitespace() {
+        let line = "192.0.2.30\tcafé.example.com  日本.example ☕"
+        let tokens = LineText.tokens(line)
+        XCTAssertEqual(tokens.map(\.text), ["192.0.2.30", "café.example.com", "日本.example", "☕"])
+        for token in tokens { XCTAssertEqual(String(line[token.range]), token.text) }
+    }
+
+    /// A remembered description is the same as a fresh one, and an invalid schedule stays invalid.
+    func testCronDescriptionsAreStableWhenRemembered() {
+        let first = CronSchedule.describe("*/15 * * * *")
+        XCTAssertNotNil(first)
+        XCTAssertEqual(CronSchedule.describe(" */15 * * * * "), first)
+        XCTAssertNil(CronSchedule.describe("61 * * * *"))
+        XCTAssertFalse(CronSchedule.isValid("61 * * * *"))
+        XCTAssertTrue(CronSchedule.isValid("@daily"))
+    }
 }
+

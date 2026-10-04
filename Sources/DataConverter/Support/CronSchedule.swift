@@ -38,12 +38,39 @@ public enum CronSchedule {
     public static func isValid(_ schedule: String) -> Bool {
         let s = schedule.trimmingCharacters(in: .whitespaces)
         if s.hasPrefix("@") { return shorthands[s.lowercased()] != nil }
-        return fields(s) != nil
+        return validity.value(for: s) { fields(s) != nil }
     }
 
-    /// `schedule` in words, or nil when it is not a valid schedule.
+    /// `schedule` in words, or nil when it is not a valid schedule. Remembered per schedule: a
+    /// crontab repeats a handful of them, and each description looks up several localised strings.
     public static func describe(_ schedule: String) -> Description? {
         let s = schedule.trimmingCharacters(in: .whitespaces)
+        return descriptions.value(for: s) { describeUncached(s) }
+    }
+
+    private static let descriptions = Memo<Description?>()
+    private static let validity = Memo<Bool>()
+
+    /// A small thread-safe memo, emptied when it grows past `limit` (a pathological file of all
+    /// different schedules cannot hold memory).
+    final class Memo<Value>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var store: [String: Value] = [:]
+        private let limit = 4096
+        func value(for key: String, _ make: () -> Value) -> Value {
+            lock.lock()
+            if let hit = store[key] { lock.unlock(); return hit }
+            lock.unlock()
+            let made = make()
+            lock.lock()
+            if store.count >= limit { store.removeAll(keepingCapacity: true) }
+            store[key] = made
+            lock.unlock()
+            return made
+        }
+    }
+
+    private static func describeUncached(_ s: String) -> Description? {
         if s.hasPrefix("@") {
             guard let expansion = shorthands[s.lowercased()] else { return nil }
             guard let five = expansion else {
@@ -52,7 +79,7 @@ public enum CronSchedule {
                         String(localized: "at startup", bundle: .module, comment: "Cron @reboot: the job runs when the machine starts")),
                     warning: nil, neverRuns: false)
             }
-            return describe(five)
+            return describeUncached(five)
         }
         guard let f = fields(s) else { return nil }
         let time = timePhrase(minute: f[0], hour: f[1])

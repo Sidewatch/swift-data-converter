@@ -33,13 +33,17 @@ enum LineText {
     /// The whitespace-separated tokens of `line` with their ranges, so an edit can replace one
     /// token and leave the spacing around it alone.
     static func tokens(_ line: String) -> [(text: String, range: Range<String.Index>)] {
+        // Scanned as UTF-8 bytes: space and tab are single ASCII bytes that never occur inside a
+        // multi-byte sequence, so the byte indices are valid String indices, and it is several times
+        // faster than stepping through Characters on a 50,000-line file.
         var out: [(String, Range<String.Index>)] = []
-        var i = line.startIndex
-        while i < line.endIndex {
-            while i < line.endIndex, line[i] == " " || line[i] == "\t" { i = line.index(after: i) }
-            guard i < line.endIndex else { break }
+        let bytes = line.utf8
+        var i = bytes.startIndex
+        while i < bytes.endIndex {
+            while i < bytes.endIndex, bytes[i] == 0x20 || bytes[i] == 0x09 { i = bytes.index(after: i) }
+            guard i < bytes.endIndex else { break }
             let start = i
-            while i < line.endIndex, line[i] != " ", line[i] != "\t" { i = line.index(after: i) }
+            while i < bytes.endIndex, bytes[i] != 0x20, bytes[i] != 0x09 { i = bytes.index(after: i) }
             out.append((String(line[start..<i]), start..<i))
         }
         return out
