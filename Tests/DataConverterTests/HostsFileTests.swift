@@ -101,4 +101,3 @@ final class HostsFileTests: XCTestCase {
         XCTAssertTrue(CronSchedule.isValid("@daily"))
     }
 }
-
