@@ -169,7 +169,7 @@ final class LineFormatsTests: XCTestCase {
 
     func testTheCorpusNotebook() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(
-            "../../../../TestFiles/structured/analysis.ipynb")
+            "../../../../TestFiles/data/trees/analysis.ipynb")
         guard let data = try? Data(contentsOf: url) else { throw XCTSkip("corpus not cloned") }
         let md = try XCTUnwrap(JupyterNotebook.markdown(from: data))
         XCTAssertTrue(md.contains("```"))
