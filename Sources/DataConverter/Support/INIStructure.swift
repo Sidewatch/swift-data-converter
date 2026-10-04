@@ -13,8 +13,9 @@ import Foundation
 /// An INI file (`.ini`, `.cfg`, `tox.ini`, git's config…) as the structure a tree shows, and the
 /// site of any key or value in it. Python `configparser` rules with git's separators: `[section]`
 /// opens a mapping, `key = value` / `key: value` are members (root keys before the first
-/// section), `;`/`#` open whole-line comments only (a `#` in a URL is data), an indented line
-/// continues the value above, a key with no separator is null. Values are typed for the tree;
+/// section), `;`/`#` open whole-line comments only (a `#` in a URL is data), a line indented deeper
+/// than the key above continues its value (keys indented alike, as git and Samba write them, stay
+/// keys), a key with no separator is null. Values are typed for the tree;
 /// duplicate keys are all listed and a path finds the first.
 public enum INIStructure {
     /// One step of a path into the tree.
@@ -130,7 +131,7 @@ public enum INIStructure {
         let ns = text as NSString
         var file = File()
         var position = 0
-        var lastEntry: (section: Int?, index: Int)?  // for continuation lines
+        var lastEntry: (section: Int?, index: Int, indent: Int)?  // for continuation lines
         while position < ns.length {
             let lineRange = ns.lineRange(for: NSRange(location: position, length: 0))
             let line = ns.substring(with: lineRange)
@@ -140,8 +141,11 @@ public enum INIStructure {
             if lineRange.length == 0 { break }
             let trimmed = body.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty || trimmed.hasPrefix(";") || trimmed.hasPrefix("#") { continue }
-            if let first = body.first, first.isWhitespace, let last = lastEntry {
-                // A continuation of the value above: its raw text grows, its range too.
+            let indent = body.prefix { $0 == " " || $0 == "\t" }.count
+            // A continuation of the value above when indented DEEPER than its key (configparser's
+            // multi-line values). Samba, git and others indent every key the same: those are keys.
+            if let last = lastEntry, indent > last.indent {
+                // Its raw text grows, its range too.
                 let more = trimmed
                 if let s = last.section {
                     let e = file.sections[s].entries[last.index]
@@ -167,10 +171,10 @@ public enum INIStructure {
             }
             let entry = entry(in: body, at: bodyRange.location)
             if file.sections.isEmpty {
-                file.globals.append(entry); lastEntry = (nil, file.globals.count - 1)
+                file.globals.append(entry); lastEntry = (nil, file.globals.count - 1, indent)
             } else {
                 file.sections[file.sections.count - 1].entries.append(entry);
-                lastEntry = (file.sections.count - 1, file.sections[file.sections.count - 1].entries.count - 1)
+                lastEntry = (file.sections.count - 1, file.sections[file.sections.count - 1].entries.count - 1, indent)
             }
         }
         if var last = file.sections.popLast() {

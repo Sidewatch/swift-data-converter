@@ -85,4 +85,24 @@ final class INIStructureTests: XCTestCase {
         let site = INIStructure.site(in: crlf, path: [.key("s"), .key("b")])
         XCTAssertEqual(site.map { (crlf as NSString).substring(with: $0.value) }, "two")
     }
+
+    /// Keys indented alike (Samba, git) are all keys; only a line indented deeper than its key
+    /// continues the value (configparser).
+    func testIndentedKeysAreKeysAndDeeperLinesContinue() {
+        let samba = "[global]\n   workgroup = WORKGROUP\n   server string = File server\n   security = user\n"
+        guard case .mapping(let sections)? = INIStructure.value(of: samba), case .mapping(let keys) = sections[0].value else {
+            return XCTFail("no sections")
+        }
+        XCTAssertEqual(keys.map(\.key), ["workgroup", "server string", "security"])
+        let git = "[user]\n\tname = Dana Example\n\temail = dana@example.com\n"
+        guard case .mapping(let gitSections)? = INIStructure.value(of: git), case .mapping(let gitKeys) = gitSections[0].value else {
+            return XCTFail("no sections")
+        }
+        XCTAssertEqual(gitKeys.map(\.key), ["name", "email"])
+        let continued = "[paths]\nsearch = /usr/lib\n    /opt/lib\nnext = 1\n"
+        guard case .mapping(let cSections)? = INIStructure.value(of: continued), case .mapping(let cKeys) = cSections[0].value else {
+            return XCTFail("no sections")
+        }
+        XCTAssertEqual(cKeys.map(\.key), ["search", "next"], "the deeper line continues search")
+    }
 }

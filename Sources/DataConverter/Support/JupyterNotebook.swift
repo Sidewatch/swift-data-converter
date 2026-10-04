@@ -16,7 +16,9 @@ import Foundation
 /// (`In [3]`), outputs after them — streams and plain-text results as `text` blocks, errors with
 /// their ANSI colour codes removed, PNG and JPEG images inline as data URIs. HTML outputs are
 /// not rendered (a notebook's HTML is code the preview would run); their plain-text form is
-/// shown when the notebook carries one.
+/// shown when the notebook carries one. Each cell opens with an empty `<div id="cell-N">` — a
+/// block, so it never joins a paragraph — for a host to scroll the rendered page to;
+/// ``cellIndex(atUTF16Offset:in:)`` finds which cell a place in the JSON belongs to.
 public enum JupyterNotebook {
 
     /// Counts for a summary line.
@@ -36,7 +38,8 @@ public enum JupyterNotebook {
         else { return nil }
         let language = self.language(root) ?? ""
         var out: [String] = []
-        for cell in cells {
+        for (index, cell) in cells.enumerated() {
+            out.append("<div id=\"\(anchor(ofCell: index))\"></div>")
             let source = text(cell["source"])
             switch cell["cell_type"] as? String {
             case "markdown":
@@ -50,6 +53,29 @@ public enum JupyterNotebook {
             }
         }
         return out.joined(separator: "\n\n") + "\n"
+    }
+
+    /// The id of cell `index`'s anchor in ``markdown(from:)``'s output.
+    public static func anchor(ofCell index: Int) -> String { "cell-\(index)" }
+
+    /// The index of the cell whose JSON holds the UTF-16 `offset` of the notebook `text`, or nil
+    /// when the offset is outside every cell (the notebook's metadata). Each probe is one scan of
+    /// the text; a binary search over the cells keeps it to a handful.
+    public static func cellIndex(atUTF16Offset offset: Int, in text: String) -> Int? {
+        guard let root = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
+            let count = (root["cells"] as? [Any])?.count, count > 0
+        else { return nil }
+        func span(_ index: Int) -> Range<Int>? {
+            guard let site = JSONEdit.site(in: text, path: [.key("cells"), .index(index)]) else { return nil }
+            return site.value.lowerBound.utf16Offset(in: text)..<site.value.upperBound.utf16Offset(in: text)
+        }
+        var low = 0, high = count - 1
+        while low < high {  // the last cell starting at or before `offset`
+            let mid = (low + high + 1) / 2
+            guard let start = span(mid)?.lowerBound else { return nil }
+            if start <= offset { low = mid } else { high = mid - 1 }
+        }
+        return span(low).map { $0.contains(offset) } == true ? low : nil
     }
 
     /// How many cells of each kind, and the language.

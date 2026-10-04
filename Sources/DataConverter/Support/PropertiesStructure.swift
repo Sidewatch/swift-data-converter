@@ -156,8 +156,9 @@ public enum PropertiesStructure {
         return last.location + (last.text as NSString).length
     }
 
-    /// The escapes resolved: `\t \n \f \r \\ \uXXXX`, `\X` → `X`.
-    static func unescaped(_ s: String) -> String {
+    /// A key or value as `java.util.Properties` reads it, escapes resolved: `\t \n \f \r \\ \uXXXX`,
+    /// `\X` → `X` (`key\ with\ spaces` is the key "key with spaces").
+    public static func unescaped(_ s: String) -> String {
         guard s.contains("\\") else { return s }
         var out = ""
         var it = s.makeIterator()

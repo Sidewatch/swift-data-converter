@@ -154,7 +154,8 @@ final class LineFormatsTests: XCTestCase {
         ]
         let data = try JSONSerialization.data(withJSONObject: notebook)
         let md = try XCTUnwrap(JupyterNotebook.markdown(from: data))
-        XCTAssertTrue(md.hasPrefix("# Title\nSome *text*."))
+        XCTAssertTrue(md.hasPrefix("<div id=\"cell-0\"></div>\n\n# Title\nSome *text*."), "each cell opens with its anchor")
+        XCTAssertTrue(md.contains("<div id=\"cell-1\"></div>\n\n*In [3]:*"))
         XCTAssertTrue(md.contains("*In [3]:*\n\n```python\nprint('hi')\nx = 1 + 1\nx\n```"))
         XCTAssertTrue(md.contains("```text\nhi\n```"))
         XCTAssertTrue(md.contains("```text\n2\n```"))
@@ -165,6 +166,16 @@ final class LineFormatsTests: XCTestCase {
         XCTAssertTrue(md.contains("*In [ ]:*\n\n````python\n```nested``` fence\n````"), "a longer fence around backticks")
         XCTAssertEqual(JupyterNotebook.summary(from: data), .init(codeCells: 2, markdownCells: 1, language: "python"))
         XCTAssertNil(JupyterNotebook.markdown(from: Data("{\"a\": 1}".utf8)))
+    }
+
+    func testAPlaceInTheJSONNamesItsCell() {
+        let text =
+            "{\"cells\": [\n {\"cell_type\": \"markdown\", \"source\": \"# A\"},\n {\"cell_type\": \"code\", \"source\": \"x\"},\n {\"cell_type\": \"code\", \"source\": \"y\"}\n], \"metadata\": {}}"
+        let ns = text as NSString
+        XCTAssertEqual(JupyterNotebook.cellIndex(atUTF16Offset: ns.range(of: "# A").location, in: text), 0)
+        XCTAssertEqual(JupyterNotebook.cellIndex(atUTF16Offset: ns.range(of: "\"x\"").location, in: text), 1)
+        XCTAssertEqual(JupyterNotebook.cellIndex(atUTF16Offset: ns.range(of: "\"y\"").location, in: text), 2)
+        XCTAssertNil(JupyterNotebook.cellIndex(atUTF16Offset: ns.range(of: "metadata").location, in: text), "outside every cell")
     }
 
     func testTheCorpusNotebook() throws {
