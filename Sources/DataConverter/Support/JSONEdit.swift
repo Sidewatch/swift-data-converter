@@ -73,6 +73,10 @@ public enum JSONEdit {
         let target: [PathComponent]
         var pos = 0
         var found: (key: Range<Int>?, value: Range<Int>)?
+        /// How many containers the scan is inside: a document nested past `maxDepth` is refused,
+        /// the way the structure reader refuses it, instead of being followed down the stack.
+        var depth = 0
+        static let maxDepth = 256
 
         init(bytes: [UInt8], target: [PathComponent]) { self.bytes = bytes; self.target = target }
 
@@ -110,6 +114,9 @@ public enum JSONEdit {
         }
 
         mutating func object(path: [PathComponent], start: Int) -> Range<Int>? {
+            guard depth < Self.maxDepth else { return nil }
+            depth += 1
+            defer { depth -= 1 }
             pos += 1
             while true {
                 skipSpace()
@@ -132,6 +139,9 @@ public enum JSONEdit {
         }
 
         mutating func array(path: [PathComponent], start: Int) -> Range<Int>? {
+            guard depth < Self.maxDepth else { return nil }
+            depth += 1
+            defer { depth -= 1 }
             pos += 1
             var i = 0
             while true {

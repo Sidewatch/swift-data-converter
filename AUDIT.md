@@ -39,3 +39,8 @@ a CR LF pair ending one row, a last field with no terminator), `DataConverter`'s
 - 23 Sep 2026 — `DotEnv.replacingValue(in:line:with:)` (the .env table's in-place edits write through it).
 - 24 Sep 2026 — `CSVEdit` (`Support/`) and `CSVTokenizer.fieldRanges(in:)` (the CSV table's in-place cell edits); `CSVEditTests`, nine tests; mutant: a field start not reset after a delimiter fails five.
 - 25 Sep 2026 — `JSONEdit` (site by path, typed encoder), `YAMLEdit` (the YAML encoder), `StructuredEdit` (the shared vocabulary and escaper); `JSONEditTests`, `YAMLEditTests`.
+- 9 Oct 2026 — corrupt-input pass (`HostileInputTests`). Fixed: `JSONEdit`'s scanner followed nesting down the
+  stack — 100,000 `[` overflowed it (signal 11 in the test process) — and now refuses a document past 256
+  levels (`Scanner.maxDepth`), the limit `JSONStructure` already had. Checked and sound: `JSONStructure` on the
+  same input, `PropertyListStructure` on a binary plist whose only array contains itself (Foundation refuses it),
+  `JupyterNotebook` on cells and outputs holding the wrong types.
