@@ -16,9 +16,11 @@ import Foundation
 /// Strict: a document that does not parse returns nil rather than a partial tree, because half a
 /// record shown as fact is worse than no record.
 public enum JSONStructure {
-    /// The document as ordered structure, or nil if it is not one JSON value.
-    public static func value(of text: String) -> StructuredValue? {
-        var parser = Parser(bytes: Array(text.utf8))
+    /// The document as ordered structure, or nil if it is not one JSON value. `lenient` also
+    /// reads JSONC — `//` and `/* */` comments, and a trailing comma before `}` or `]` (a
+    /// `tsconfig.json`, VS Code's settings) — still in file order.
+    public static func value(of text: String, lenient: Bool = false) -> StructuredValue? {
+        var parser = Parser(bytes: Array(text.utf8), lenient: lenient)
         guard let value = parser.parseValue() else { return nil }
         parser.skipWhitespace()
         return parser.atEnd ? value : nil
@@ -28,14 +30,30 @@ public enum JSONStructure {
 
     private struct Parser {
         let bytes: [UInt8]
+        let lenient: Bool
         var i = 0
-        init(bytes: [UInt8]) { self.bytes = bytes }
+        init(bytes: [UInt8], lenient: Bool) {
+            self.bytes = bytes
+            self.lenient = lenient
+        }
 
         var atEnd: Bool { i >= bytes.count }
         private var current: UInt8? { i < bytes.count ? bytes[i] : nil }
 
         mutating func skipWhitespace() {
-            while let c = current, c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D { i += 1 }
+            while true {
+                while let c = current, c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D { i += 1 }
+                guard lenient, current == UInt8(ascii: "/"), i + 1 < bytes.count else { return }
+                if bytes[i + 1] == UInt8(ascii: "/") {
+                    while let c = current, c != 0x0A { i += 1 }
+                } else if bytes[i + 1] == UInt8(ascii: "*") {
+                    i += 2
+                    while i + 1 < bytes.count, !(bytes[i] == UInt8(ascii: "*") && bytes[i + 1] == UInt8(ascii: "/")) { i += 1 }
+                    i = min(i + 2, bytes.count)
+                } else {
+                    return
+                }
+            }
         }
 
         /// Depth is bounded so a pathological document cannot exhaust the stack.
@@ -67,6 +85,7 @@ public enum JSONStructure {
             if current == UInt8(ascii: "}") { i += 1; return .mapping(pairs) }
             while true {
                 skipWhitespace()
+                if lenient, current == UInt8(ascii: "}"), !pairs.isEmpty { i += 1; return .mapping(pairs) }  // trailing comma
                 guard current == UInt8(ascii: "\""), let key = parseString() else { return nil }
                 skipWhitespace()
                 guard current == UInt8(ascii: ":") else { return nil }
@@ -88,6 +107,8 @@ public enum JSONStructure {
             skipWhitespace()
             if current == UInt8(ascii: "]") { i += 1; return .sequence(items) }
             while true {
+                skipWhitespace()
+                if lenient, current == UInt8(ascii: "]"), !items.isEmpty { i += 1; return .sequence(items) }  // trailing comma
                 guard let value = parseValue(depth: depth + 1) else { return nil }
                 items.append(value)
                 skipWhitespace()

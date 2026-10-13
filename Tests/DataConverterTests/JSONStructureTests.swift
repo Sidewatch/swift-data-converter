@@ -104,4 +104,40 @@ final class JSONStructureTests: XCTestCase {
     func testTwoDocumentsInOneTextDoNotParse() {
         XCTAssertNil(JSONStructure.value(of: #"{"a":1}"# + "\n" + #"{"a":2}"#))
     }
+
+    // MARK: JSONC (lenient)
+
+    func testLenientReadsCommentsAndTrailingCommasInFileOrder() {
+        let jsonc = """
+            // tsconfig-style
+            {
+              "zebra": 1, /* inline */
+              "apple": [1, 2, 3,],
+              "mango": { "b": true, "a": false, }, // trailing
+            }
+            """
+        let value = JSONStructure.value(of: jsonc, lenient: true)
+        XCTAssertEqual(keys(value), ["zebra", "apple", "mango"])
+        guard case .mapping(let pairs)? = value else { return XCTFail("did not parse") }
+        XCTAssertEqual(keys(pairs[2].value), ["b", "a"], "nested keys keep their order too")
+        XCTAssertEqual(pairs[1].value, .sequence([.integer(1), .integer(2), .integer(3)]))
+    }
+
+    func testStrictRefusesWhatOnlyLenientAccepts() {
+        XCTAssertNil(JSONStructure.value(of: #"{"a": 1, // no"# + "\n}"))
+        XCTAssertNil(JSONStructure.value(of: #"{"a": 1,}"#))
+        XCTAssertNil(JSONStructure.value(of: "[1,]"))
+    }
+
+    func testLenientStillRefusesBrokenJSON() {
+        XCTAssertNil(JSONStructure.value(of: "{,}", lenient: true), "a comma with nothing before it")
+        XCTAssertNil(JSONStructure.value(of: "[,]", lenient: true))
+        XCTAssertNil(JSONStructure.value(of: #"{"a": 1 /* never closed"#, lenient: true))
+    }
+
+    func testACommentMarkerInsideAStringIsText() {
+        let value = JSONStructure.value(of: #"{"url": "https://x.example/a//b"}"#, lenient: true)
+        guard case .mapping(let pairs)? = value else { return XCTFail("did not parse") }
+        XCTAssertEqual(pairs.first?.value, .string("https://x.example/a//b"))
+    }
 }
