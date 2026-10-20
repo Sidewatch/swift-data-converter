@@ -122,4 +122,25 @@ final class DotEnvTests: XCTestCase {
         XCTAssertEqual(entries.first?.value, "postgres://app:s3cret@db/app", "the value is untouched by a rename")
         XCTAssertTrue(renamed.contains("# main"))
     }
+
+    func testARepeatedKeyIsFoundAgainByOccurrenceAfterALineIsInsertedAbove() {
+        let before = DotEnv.parse("A=1\nKEY=first\nKEY=second\n")
+        let after = DotEnv.parse("NEW=0\nA=1\nKEY=first\nKEY=second\n")
+        let second = before.filter { $0.key == "KEY" }[1]
+        XCTAssertEqual(DotEnv.entry(matching: second, among: before, in: after).value, "second")
+        XCTAssertEqual(DotEnv.entry(matching: second, among: before, in: after).line, second.line + 1)
+    }
+
+    func testAKeyThatVanishedFallsBackToTheOldEntry() {
+        let before = DotEnv.parse("GONE=1\n")
+        XCTAssertEqual(DotEnv.entry(matching: before[0], among: before, in: DotEnv.parse("OTHER=2\n")), before[0])
+    }
+
+    func testAMaskedValueIsNotSearchedUntilRevealed() {
+        let entry = DotEnv.parse("API_TOKEN=sk-live-123\n")[0]
+        XCTAssertTrue(DotEnv.matches(entry, query: "token", caseSensitive: false, valueIsSearchable: false), "the key matches")
+        XCTAssertFalse(DotEnv.matches(entry, query: "live", caseSensitive: false, valueIsSearchable: false), "a masked value stays hidden")
+        XCTAssertTrue(DotEnv.matches(entry, query: "live", caseSensitive: false, valueIsSearchable: true))
+        XCTAssertFalse(DotEnv.matches(entry, query: "token", caseSensitive: true, valueIsSearchable: false), "case-sensitive")
+    }
 }
