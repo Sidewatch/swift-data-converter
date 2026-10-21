@@ -64,6 +64,11 @@ env.map { ($0.key, DotEnv.shouldMask(key: $0.key, value: $0.value) ? DotEnv.mask
 
 `from` accepts `"CSV"` (anything else parses as JSON); `to` accepts `"YAML"`, `"TOML"`, `"CSV"` (anything else emits pretty JSON).
 
+```swift
+// Tab-separated text: tabs only, no quoting (a comma is just text).
+let rows = DataConverter.tsvRecords("name\tnote\nAda\tone, two\n")   // [["name", "note"], ["Ada", "one, two"]]
+```
+
 ## Notes
 
 - `convert` never throws — errors are returned as `"⚠︎"`-prefixed strings.

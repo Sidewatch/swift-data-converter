@@ -187,4 +187,11 @@ final class DataConverterTests: XCTestCase {
         XCTAssertEqual(DataConverter.csvRecords("a,b\n1,"), [["a", "b"], ["1", ""]])
         XCTAssertEqual(DataConverter.csvRecords("a,b\n1,2\n"), [["a", "b"], ["1", "2"]])  // trailing newline adds no row
     }
+
+    func testTabSeparatedRecordsSplitOnTabsOnly() {
+        XCTAssertEqual(
+            DataConverter.tsvRecords("name\tnote\r\nAda\t\"one, two\"\n\nBob\t\n"),
+            [["name", "note"], ["Ada", "\"one, two\""], ["Bob", ""]],
+            "CRLF trimmed, empty lines skipped, commas and quotes are text, an empty last cell kept")
+    }
 }

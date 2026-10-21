@@ -263,4 +263,11 @@ public enum DataConverter {
     /// fields survive; doubled quotes (`""`) unescape to one quote. LF, CRLF, and bare CR all
     /// end a record. Reusable on its own (e.g. to drive a table view without header mapping).
     public static func csvRecords(_ text: String) -> [[String]] { CSVTokenizer.records(in: text) }
+
+    /// Tab-separated text as records of fields, header row included: one record per line (LF or CRLF;
+    /// empty lines skipped), split on every tab. TSV has no quoting, so a comma or a quote is just text.
+    public static func tsvRecords(_ text: String) -> [[String]] {
+        text.components(separatedBy: "\n").map { $0.hasSuffix("\r") ? String($0.dropLast()) : $0 }
+            .filter { !$0.isEmpty }.map { $0.components(separatedBy: "\t") }
+    }
 }
