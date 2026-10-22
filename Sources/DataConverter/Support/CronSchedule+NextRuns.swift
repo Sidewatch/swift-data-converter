@@ -26,23 +26,33 @@ extension CronSchedule {
         calendar.timeZone = timeZone
         let minutes = f[0].values.sorted()
         let hours = f[1].values.sorted()
+        let months = f[3].values
         let weekdays = Set(f[4].values.map { $0 % 7 })
         let either = !f[2].raw.hasPrefix("*") && !f[4].raw.hasPrefix("*")
+        let start = calendar.dateComponents([.year, .month, .day, .weekday], from: date)
+        guard var year = start.year, var month = start.month, var day = start.day, let firstWeekday = start.weekday else { return [] }
+        // The days are walked by counting, the weekday stepping along: the calendar is asked
+        // only for the times that might run, never for every day passed.
+        var weekday = firstWeekday - 1
+        let lastYear = year + searchYears
         var runs: [Date] = []
-        var day = calendar.startOfDay(for: date)
-        let lastDay = calendar.date(byAdding: .year, value: searchYears, to: day) ?? day
-        while runs.count < count, day <= lastDay {
-            let parts = calendar.dateComponents([.year, .month, .day, .weekday], from: day)
-            if let year = parts.year, let month = parts.month, let dayOfMonth = parts.day, let weekday = parts.weekday,
-                f[3].values.contains(month),
-                matchesDay(dayOfMonth: f[2].values.contains(dayOfMonth), weekday: weekdays.contains(weekday - 1), either: either)
-            {
-                runs += times(
-                    on: (year, month, dayOfMonth), hours: hours, minutes: minutes, after: date, calendar: calendar,
-                    limit: count - runs.count)
+        while runs.count < count, year <= lastYear {
+            let length = daysIn(month: month, year: year)
+            guard months.contains(month) else {
+                weekday = (weekday + length - day + 1) % 7
+                (year, month, day) = month == 12 ? (year + 1, 1, 1) : (year, month + 1, 1)
+                continue
             }
-            guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { break }
-            day = next
+            if matchesDay(dayOfMonth: f[2].values.contains(day), weekday: weekdays.contains(weekday), either: either) {
+                runs += times(
+                    on: (year, month, day), hours: hours, minutes: minutes, after: date, calendar: calendar, limit: count - runs.count)
+            }
+            weekday = (weekday + 1) % 7
+            if day < length {
+                day += 1
+            } else {
+                (year, month, day) = month == 12 ? (year + 1, 1, 1) : (year, month + 1, 1)
+            }
         }
         return runs
     }
@@ -58,6 +68,15 @@ extension CronSchedule {
             return fields(five)
         }
         return fields(s)
+    }
+
+    /// The number of days in `month` of `year`, Gregorian leap years included.
+    static func daysIn(month: Int, year: Int) -> Int {
+        switch month {
+        case 2: return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) ? 29 : 28
+        case 4, 6, 9, 11: return 30
+        default: return 31
+        }
     }
 
     /// Whether a day runs: both fields matching, or either one when both are restricted.

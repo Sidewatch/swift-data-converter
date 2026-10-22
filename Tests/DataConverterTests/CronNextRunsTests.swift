@@ -117,6 +117,17 @@ final class CronNextRunsTests: XCTestCase {
             runs("30 1 * * *", after: "2026-10-24T12:00:00Z", 2, in: london), ["2026-10-25T01:30:00+01:00", "2026-10-26T01:30:00Z"])
     }
 
+    func testMonthLengthsFollowTheGregorianLeapRule() {
+        XCTAssertEqual(CronSchedule.daysIn(month: 2, year: 2028), 29)
+        XCTAssertEqual(CronSchedule.daysIn(month: 2, year: 2027), 28)
+        XCTAssertEqual(CronSchedule.daysIn(month: 2, year: 2100), 28, "a century is not a leap year")
+        XCTAssertEqual(CronSchedule.daysIn(month: 2, year: 2000), 29, "unless it divides by 400")
+        XCTAssertEqual([4, 6, 9, 11].map { CronSchedule.daysIn(month: $0, year: 2026) }, [30, 30, 30, 30])
+        XCTAssertEqual([1, 3, 5, 7, 8, 10, 12].map { CronSchedule.daysIn(month: $0, year: 2026) }, [31, 31, 31, 31, 31, 31, 31])
+        // Walked across the century: 2100 has no 29 February, so the run after 2096's is 2104's.
+        XCTAssertEqual(runs("0 0 29 2 *", after: "2097-01-01T00:00:00Z", 1), ["2104-02-29T00:00:00Z"])
+    }
+
     func testACrontabNamesItsTimeZone() {
         XCTAssertEqual(Crontab.parse("CRON_TZ=Asia/Tokyo\n0 9 * * * backup\n").timeZone?.identifier, "Asia/Tokyo")
         XCTAssertNil(Crontab.parse("0 9 * * * backup\n").timeZone)
