@@ -17,6 +17,8 @@ let package = Package(
             path: "Sources",
             resources: [.process("DataConverter/Localizable.xcstrings")],
             swiftSettings: [.swiftLanguageMode(.v6)]),
-        .testTarget(name: "DataConverterTests", dependencies: ["DataConverter"], path: "Tests"),
+        .testTarget(
+            name: "DataConverterTests", dependencies: ["DataConverter"], path: "Tests",
+            resources: [.copy("DataConverterTests/Fixtures")]),
     ]
 )

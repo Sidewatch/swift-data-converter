@@ -54,6 +54,12 @@ public enum Crontab {
         public let assignments: [Assignment]
         /// The jobs, in file order.
         public let jobs: [Job]
+
+        /// The time zone the jobs run in when the file names one (`CRON_TZ=Europe/London`, as
+        /// cronie reads it); nil for the machine's own, or a name the system does not know.
+        public var timeZone: TimeZone? {
+            assignments.last { $0.key == "CRON_TZ" }.flatMap { TimeZone(identifier: $0.value) }
+        }
     }
 
     /// The assignments and jobs of `text`.
