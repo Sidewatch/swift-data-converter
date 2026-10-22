@@ -18,8 +18,8 @@ extension CronSchedule {
     /// comes (the 30th of February). A wall-clock time a daylight-saving change skips is left
     /// out (cron implementations differ there); one it repeats fires once, the first time.
     ///
-    /// Looks at most `CronSchedule.searchYears` years ahead, enough for the 29th of February on
-    /// a given weekday.
+    /// Looks at most `CronSchedule.searchYears` years ahead, so a schedule for the 29th of February
+    /// lists two runs at most, and one that matches rarer days than that may list none.
     public static func nextRuns(_ schedule: String, after date: Date, count: Int, in timeZone: TimeZone = .current) -> [Date] {
         guard count > 0, let f = expandedFields(schedule), !impossibility(dom: f[2], month: f[3], dow: f[4]).1 else { return [] }
         var calendar = Calendar(identifier: .gregorian)
