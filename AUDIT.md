@@ -44,3 +44,10 @@ a CR LF pair ending one row, a last field with no terminator), `DataConverter`'s
   levels (`Scanner.maxDepth`), the limit `JSONStructure` already had. Checked and sound: `JSONStructure` on the
   same input, `PropertyListStructure` on a binary plist whose only array contains itself (Foundation refuses it),
   `JupyterNotebook` on cells and outputs holding the wrong types.
+- 27 Oct 2026 — a table's rows as text: `TableText` (CSV through `CSVEdit.encoded`, TSV, a Markdown table, JSON keeping
+  each `TableCell`'s type), `ColumnNames`, `JQPath`. The converter's own CSV writer now quotes with `CSVEdit.encoded`
+  too (one rule, where there were three), and `parseCSV` names repeated headers with `ColumnNames`, which fixes `id`,
+  `id_2`, `id` coming out with two `id_2`. Tests: `TableTextTests`, `ColumnNamesTests`, `JQPathTests`. Mutants, each run
+  and restored: CSV fields unquoted, TSV unquoted, Markdown pipes unescaped, numeric columns not right-aligned, JSON
+  keys left repeated, infinity written as a number, the taken suffix not skipped, a jq keyword left bare, a non-ASCII
+  letter taken as a bare name — all caught.

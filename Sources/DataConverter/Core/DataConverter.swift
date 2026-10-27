@@ -201,9 +201,9 @@ public enum DataConverter {
         }
         var keys: [String] = []
         for o in objs { for k in o.keys.sorted() where !keys.contains(k) { keys.append(k) } }
-        var rows = [keys.map(esc).joined(separator: ",")]
+        var rows = [keys.map(CSVEdit.encoded).joined(separator: ",")]
         for o in objs {
-            rows.append(keys.map { esc(cell(o[$0])) }.joined(separator: ","))
+            rows.append(keys.map { CSVEdit.encoded(cell(o[$0])) }.joined(separator: ","))
         }
         return rows.joined(separator: "\n")
     }
@@ -223,13 +223,6 @@ public enum DataConverter {
         }
         return "\(v)"
     }
-    /// RFC-4180 field quoting: wrap in quotes (doubling embedded quotes) only when the cell
-    /// contains a comma, quote, or line break.
-    private static func esc(_ s: String) -> String {
-        (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r"))
-            ? "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : s
-    }
-
     /// Parse CSV text into one dictionary per data row, keyed by the header row.
     ///
     /// Repeated header names are de-duplicated (`name`, `name_2`, …); rows shorter than the header
@@ -241,15 +234,8 @@ public enum DataConverter {
     public static func parseCSV(_ text: String) -> [[String: Any]] {
         let records = csvRecords(text)
         guard records.count > 1 else { return [] }
-        var headers: [String] = [], seen: [String: Int] = [:]
-        func addHeader(_ h: String) {  // de-dupe repeated headers: name, name_2, …
-            let n = (seen[h] ?? 0) + 1
-            seen[h] = n
-            headers.append(n == 1 ? h : "\(h)_\(n)")
-        }
-        for h in records[0] { addHeader(h) }
-        let width = records.dropFirst().reduce(headers.count) { max($0, $1.count) }
-        for i in headers.count..<width { addHeader("column_\(i + 1)") }
+        let width = records.dropFirst().reduce(records[0].count) { max($0, $1.count) }
+        let headers = ColumnNames.unique(records[0] + (records[0].count..<width).map { "column_\($0 + 1)" })
         return records.dropFirst().map { cells in
             var d: [String: Any] = [:]
             for (i, h) in headers.enumerated() { d[h] = i < cells.count ? cells[i] : "" }
