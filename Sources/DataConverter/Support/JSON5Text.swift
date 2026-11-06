@@ -3,7 +3,7 @@
 //  DataConverter
 //
 //  JSON5 that Foundation's JSON5 reader rejects (escapes, hex and out-of-range numbers), rewritten
-//  so it reads.
+//  so it reads; and the comments and trailing commas that set a document apart from strict JSON.
 //
 //  Created by David Sherlock on 10/5/26.
 //  Copyright © 2026 ArrayPress Limited. MIT licence.
@@ -49,6 +49,46 @@ public enum JSON5Text {
             }
         }
         return String(utf16CodeUnits: out, count: out.count)
+    }
+
+    /// Whether `text` holds a `//` or `/* */` comment outside a string, so slashes in a URL are not one. A comment-free
+    /// text is read to its end.
+    public static func containsComment(_ text: String) -> Bool {
+        containsOutsideStrings(text) { bytes, i in
+            bytes[i] == UInt8(ascii: "/") && i + 1 < bytes.count && (bytes[i + 1] == UInt8(ascii: "/") || bytes[i + 1] == UInt8(ascii: "*"))
+        }
+    }
+
+    /// Whether `text` holds a comma with only whitespace between it and a closing `}` or `]`, outside a string. Foundation's
+    /// strict reader takes one, though JSON does not allow it.
+    public static func containsTrailingComma(_ text: String) -> Bool {
+        containsOutsideStrings(text) { bytes, i in
+            guard bytes[i] == UInt8(ascii: ",") else { return false }
+            var next = i + 1
+            while next < bytes.count, [0x20, 0x09, 0x0A, 0x0D].contains(bytes[next]) { next += 1 }
+            return next < bytes.count && (bytes[next] == UInt8(ascii: "}") || bytes[next] == UInt8(ascii: "]"))
+        }
+    }
+
+    /// Whether `matches` holds at any byte of `text` outside a JSON or JSON5 string.
+    private static func containsOutsideStrings(_ text: String, where matches: (UnsafeBufferPointer<UInt8>, Int) -> Bool) -> Bool {
+        var text = text
+        return text.withUTF8 { bytes in
+            var i = 0
+            var quote: UInt8?
+            while i < bytes.count {
+                let c = bytes[i]
+                if let q = quote {
+                    if c == UInt8(ascii: "\\") { i += 1 } else if c == q { quote = nil }
+                } else if c == UInt8(ascii: "\"") || c == UInt8(ascii: "'") {
+                    quote = c
+                } else if matches(bytes, i) {
+                    return true
+                }
+                i += 1
+            }
+            return false
+        }
     }
 
     /// The JSON spelling of the escape whose letter is at `i`; leaves `i` after it.

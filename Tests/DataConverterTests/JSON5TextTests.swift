@@ -15,6 +15,37 @@ final class JSON5TextTests: XCTestCase {
         try? JSONSerialization.jsonObject(with: Data(JSON5Text.foundationReadable(text).utf8), options: [.fragmentsAllowed, .json5Allowed])
     }
 
+    func testACommentAnywhereOutsideAStringIsFound() {
+        for text in [
+            "// a theme\n{}", "{\"a\": 1 /* one */}", "{\"a\": 1} // one", "{\"a\": \"b\" // it's\n}", "{'a': 1, /* two */ 'b': 2}",
+        ] {
+            XCTAssertTrue(JSON5Text.containsComment(text), text)
+        }
+        let bridged = NSString(string: "{\"é\": 1} // bridged") as String
+        XCTAssertTrue(JSON5Text.containsComment(bridged))
+    }
+
+    func testSlashesThatAreNotACommentAreNotFound() {
+        for text in [
+            "", "/", "{}", "{\"a\": 1,}", "{\"url\": \"https://example.com/*\"}", #"{"q": "a\"// b"}"#, #"{"q": "a\\", "r": "http://x"}"#,
+            "{'url': 'http://x'}", "{\"it's\": \"http://x\"}", "{\"a\": 1 / 2}",
+        ] {
+            XCTAssertFalse(JSON5Text.containsComment(text), text)
+        }
+    }
+
+    func testATrailingCommaBeforeAClosingBracketIsFound() {
+        for text in ["{\"a\": 1,}", "[1, 2,]", "{\"a\": [1,\n\t ]}", "{\"a\": 1,\r\n}"] {
+            XCTAssertTrue(JSON5Text.containsTrailingComma(text), text)
+        }
+    }
+
+    func testCommasThatDoNotTrailAreNotFound() {
+        for text in ["", ",", "{\"a\": 1, \"b\": 2}", "[1, 2]", "{\"a\": \",}\"}", "[\"a\\\",]\"]", "[1,"] {
+            XCTAssertFalse(JSON5Text.containsTrailingComma(text), text)
+        }
+    }
+
     func testJSON5OnlyEscapesReadAsJSON5Means() {
         let value = read(#"{a: 'v\v z\0 x\x41 id\a\c q\' "\"" t\t', /* it's */ b: 1 // don't"# + "\n}") as? [String: Any]
         XCTAssertEqual(value?["a"] as? String, "v\u{0B} z\u{2400} xA id" + "ac q' \"\"\" t\t")
